@@ -9,14 +9,22 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { api, type AssistantChatMessage, type AssistantToolCall } from "@/lib/api";
+import { api, type AssistantChatMessage, type AssistantRequestMeta, type AssistantToolCall } from "@/lib/api";
 import { usePredictionStore } from "@/components/prediction-store";
 
 interface DisplayMessage {
   role: "user" | "assistant";
   content: string;
   toolCalls?: AssistantToolCall[];
+  meta?: AssistantRequestMeta;
   error?: boolean;
+}
+
+function metaLabel(meta?: AssistantRequestMeta): string | null {
+  if (!meta) return null;
+  if (meta.routed !== "llm") return `instant · ${meta.routed.replace(/_/g, " ")} lookup`;
+  const calls = meta.llm_calls === 1 ? "1 call" : `${meta.llm_calls} calls`;
+  return `${meta.provider} · ${calls} · ${Math.round(meta.duration_ms)}ms`;
 }
 
 const SUGGESTIONS = [
@@ -68,7 +76,7 @@ export function AssistantChat() {
         messages: history,
         page_context: pageContextFor(pathname, lastPrediction),
       });
-      setMessages((prev) => [...prev, { role: "assistant", content: res.reply, toolCalls: res.tool_calls }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: res.reply, toolCalls: res.tool_calls, meta: res.meta }]);
     } catch (err) {
       setMessages((prev) => [
         ...prev,
@@ -233,6 +241,9 @@ function ChatBubble({ message }: { message: DisplayMessage }) {
             </span>
           ))}
         </div>
+      )}
+      {!isUser && !message.error && metaLabel(message.meta) && (
+        <span className="px-1 text-[10px] text-muted-foreground/70">{metaLabel(message.meta)}</span>
       )}
     </div>
   );

@@ -228,9 +228,22 @@ export interface AssistantToolCall {
   result: unknown;
 }
 
+export interface AssistantRequestMeta {
+  provider: string;
+  model: string;
+  llm_calls: number;
+  tool_calls: string[];
+  input_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  duration_ms: number;
+  routed: string;
+}
+
 export interface AssistantChatResponse {
   reply: string;
   tool_calls: AssistantToolCall[];
+  meta?: AssistantRequestMeta;
 }
 
 // ── Classification (formulation efficacy class) ──────────────────────────

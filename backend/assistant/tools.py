@@ -81,6 +81,33 @@ def _get_service(services: dict[str, Any]) -> ModelService:
     return services["model_service"]
 
 
+def _cap_counts(counts: dict[str, int], n: int = 10) -> dict[str, int | str]:
+    """Trims a value_counts()-style dict to its top-n entries so a
+    dataset-statistics tool result doesn't spend hundreds of tokens on a
+    long tail the question never asked about. Adds a summary key instead of
+    silently dropping the rest."""
+    if len(counts) <= n:
+        return counts
+    items = sorted(counts.items(), key=lambda kv: kv[1], reverse=True)
+    trimmed = dict(items[:n])
+    remaining = len(items) - n
+    trimmed[f"...and {remaining} more"] = sum(v for _, v in items[n:])
+    return trimmed
+
+
+def _round_floats(obj: Any, ndigits: int = 3) -> Any:
+    """Recursively rounds floats in a tool result so the LLM sees
+    '0.183' instead of '0.18294572639...' -- same information, far fewer
+    tokens, and no precision the UI would ever show anyway."""
+    if isinstance(obj, float):
+        return round(obj, ndigits)
+    if isinstance(obj, dict):
+        return {k: _round_floats(v, ndigits) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_round_floats(v, ndigits) for v in obj]
+    return obj
+
+
 def tool_get_project_overview(services: dict[str, Any], **_: Any) -> dict[str, Any]:
     svc = _get_service(services)
     return {
@@ -93,7 +120,15 @@ def tool_get_project_overview(services: dict[str, Any], **_: Any) -> dict[str, A
 
 
 def tool_get_dataset_statistics(services: dict[str, Any], cheese_category: str | None = None, **_: Any) -> dict[str, Any]:
-    return _get_service(services).dataset_statistics(cheese_category=cheese_category)
+    # dataset_statistics() itself is shared with the REST /api endpoints and
+    # stays full-detail; only this assistant-facing copy is trimmed, since a
+    # 70-ingredient value_counts breakdown costs real tokens on questions
+    # that just want "how many rows."
+    stats = dict(_get_service(services).dataset_statistics(cheese_category=cheese_category))
+    for key in ("food_matrices", "packaging_types", "indicator_types", "ingredient_families", "ingredients", "application_methods"):
+        if key in stats:
+            stats[key] = _cap_counts(stats[key])
+    return _round_floats(stats)
 
 
 def tool_get_feature_information(services: dict[str, Any], feature_name: str | None = None, **_: Any) -> dict[str, Any]:
@@ -118,10 +153,10 @@ def tool_get_model_metrics(services: dict[str, Any], model: str | None = None, *
         resolved = svc.resolve_model_name(model)
         if resolved not in svc.metrics:
             return {"error": f"Unknown model: {model!r}", "available_models": svc.available_models}
-        return {"model": resolved, "label": svc.model_label(resolved), "is_best": resolved == svc.best_model,
-                "metrics": svc.metrics[resolved]}
+        return _round_floats({"model": resolved, "label": svc.model_label(resolved), "is_best": resolved == svc.best_model,
+                "metrics": svc.metrics[resolved]})
     ranked = sorted(svc.available_models, key=lambda m: svc.metrics[m]["validation_rmse"])
-    return {
+    return _round_floats({
         "best_model": svc.best_model,
         "leaderboard": [
             {"model": m, "label": svc.model_label(m), "is_best": m == svc.best_model,
@@ -129,7 +164,7 @@ def tool_get_model_metrics(services: dict[str, Any], model: str | None = None, *
              "test_r2": svc.metrics[m]["test_r2"], "test_rmse": svc.metrics[m]["test_rmse"]}
             for m in ranked
         ],
-    }
+    })
 
 
 def tool_predict_shelf_life(services: dict[str, Any], features: dict[str, Any] | None = None, model: str | None = None, **_: Any) -> dict[str, Any]:
@@ -137,7 +172,7 @@ def tool_predict_shelf_life(services: dict[str, Any], features: dict[str, Any] |
     row = svc.default_row()
     row.update(features or {})
     try:
-        return svc.predict_one(model or svc.best_model, row)
+        return _round_floats(svc.predict_one(model or svc.best_model, row))
     except Exception as exc:  # noqa: BLE001 -- surfaced to the LLM as a tool error, not raised
         return {"error": str(exc)}
 
@@ -151,7 +186,7 @@ def tool_compare_treatments(
         return {"error": "At least one candidate treatment is required (name, treatment_type, application_method, primary_ingredient_name, primary_concentration, primary_concentration_unit)."}
     try:
         built = [build_candidate_row(c) for c in candidates]
-        return svc.compare_control_vs_candidates(model or svc.best_model, shared or {}, built)
+        return _round_floats(svc.compare_control_vs_candidates(model or svc.best_model, shared or {}, built))
     except Exception as exc:  # noqa: BLE001
         return {"error": str(exc)}
 
@@ -162,7 +197,7 @@ def tool_explain_prediction(services: dict[str, Any], features: dict[str, Any] |
     row.update(features or {})
     try:
         factors = svc.local_explanation(model or svc.best_model, row, top_k=top_k)
-        return {"model": svc.resolve_model_name(model or svc.best_model), "factors": factors}
+        return _round_floats({"model": svc.resolve_model_name(model or svc.best_model), "factors": factors})
     except Exception as exc:  # noqa: BLE001
         return {"error": str(exc)}
 
@@ -246,3 +281,80 @@ TOOL_SPECS: list[dict[str, Any]] = [
         "parameters": {"type": "object", "properties": {}},
     }},
 ]
+
+_TOOL_SPECS_BY_NAME: dict[str, dict[str, Any]] = {spec["function"]["name"]: spec for spec in TOOL_SPECS}
+
+# Keyword -> tool names. A request only needs to match one keyword from a
+# category to pull in that category's tools; multiple categories can match
+# and their tools are merged (deduplicated), so a compound question still
+# gets everything it plausibly needs. get_feature_information is cheap and
+# broadly useful, so it rides along with every non-empty match.
+_TOOL_CATEGORIES: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
+    "prediction": (
+        ("predict", "shelf life", "shelf-life", "how long", "how many days", "would it last", "would last"),
+        ("predict_shelf_life", "explain_prediction", "get_feature_information"),
+    ),
+    "explanation": (
+        ("why", "explain the prediction", "factor", "drove", "driving"),
+        ("explain_prediction", "predict_shelf_life", "get_feature_information"),
+    ),
+    "comparison": (
+        ("compare", "versus", " vs ", "better than", "improve", "improvement", "treatment", "ingredient"),
+        ("compare_treatments", "get_feature_information"),
+    ),
+    "model": (
+        ("model", "accuracy", "metric", "rmse", "r2", "r-squared", "best model", "performs"),
+        ("get_model_metrics",),
+    ),
+    "dataset": (
+        ("how many", "row", "dataset", "statistic", "distribution", "count", "category", "categories"),
+        ("get_dataset_statistics",),
+    ),
+    "project": (
+        ("project", "pipeline", "methodology", "how does this work", "about this app", "about shelf-life studio"),
+        ("get_project_overview",),
+    ),
+    "references": (
+        ("reference", "source", "citation", "provenance", "where does this data come from", "real data", "synthetic"),
+        ("get_references",),
+    ),
+    "feature": (
+        ("mean", "definition", "define", "feature", "column"),
+        ("get_feature_information",),
+    ),
+}
+
+# page_context.current_page substring -> tools to bias toward for an
+# otherwise-ambiguous message on that page.
+_PAGE_TOOL_HINTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("/prediction", ("predict_shelf_life", "explain_prediction", "get_feature_information")),
+    ("/results", ("get_model_metrics", "explain_prediction")),
+    ("/modeling", ("get_model_metrics",)),
+)
+
+
+def select_tools(text: str, page_context: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    """Returns the subset of TOOL_SPECS relevant to `text`, so a provider
+    request doesn't have to carry all 8 tool schemas (and their token cost)
+    when only 1-3 are plausibly needed. Falls back to the full TOOL_SPECS
+    whenever nothing matches -- an uncertain/compound question should never
+    be under-served just to save tokens."""
+    t = (text or "").lower()
+    matched: list[str] = []
+    for keywords, tool_names in _TOOL_CATEGORIES.values():
+        if any(kw in t for kw in keywords):
+            for name in tool_names:
+                if name not in matched:
+                    matched.append(name)
+
+    if page_context:
+        current_page = str(page_context.get("current_page") or "")
+        for prefix, tool_names in _PAGE_TOOL_HINTS:
+            if prefix in current_page:
+                for name in tool_names:
+                    if name not in matched:
+                        matched.append(name)
+
+    if not matched:
+        return TOOL_SPECS
+    return [_TOOL_SPECS_BY_NAME[name] for name in matched if name in _TOOL_SPECS_BY_NAME]
