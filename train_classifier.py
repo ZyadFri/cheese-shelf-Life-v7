@@ -56,14 +56,48 @@ from model_service import make_context_splits  # noqa: E402 -- pure function, no
 
 SEED = 42
 ROOT = Path(__file__).resolve().parent
-XLSX_PATH = ROOT / "data" / "raw" / "CHEESE_SHELF_LIFE_REVISED_READY_TO_TRAIN.xlsx"
-SHEET_NAME = "training_data"
+# V7 migration: the classifier now pools all three V7 specialist files (soft/
+# semi_hard/hard), both model_task splits (general_shelf_life + safety_endpoint)
+# -- context_id never collides across the three files (verified), and pooling
+# both tasks matches the original legacy dataset's design (one unified pool
+# spanning every cheese category and indicator type, no task distinction
+# existed there at all).
+V7_CSV_PATHS = [
+    ROOT / "data" / "raw" / f"CHEESE_SHELF_LIFE_V7_{name}_SPECIALIST_CORRECTED.csv"
+    for name in ("SOFT", "SEMI_HARD", "HARD")
+]
 ARTIFACTS_DIR = ROOT / "artifacts_classification"
 MODELS_DIR = ARTIFACTS_DIR / "models"
 TARGET_RAW = "shelf_life_days"
 ID_COLUMNS = ["row_id", "context_id", "formulation_id", "source_rule_id"]
 PROVENANCE_COLUMNS = ["data_origin", "training_weight", "quality_flag"]
-EXCLUDED_COLUMNS = ID_COLUMNS + PROVENANCE_COLUMNS
+# V7-only columns excluded as features -- verified against the actual V7 data
+# (not assumed) before deciding feature vs. exclude, same rationale already
+# established during the V7 regression migration earlier this session. Two
+# differences from that migration's exclude list, because this classifier
+# pools ALL categories and BOTH tasks (the regression specialists were each
+# trained on one category/task alone):
+#   cheese_category / model_task   NOT constant here (both are pooled across
+#                                   the whole dataset) -- kept as real features,
+#                                   unlike the per-specialist regression system
+#   is_challenge_test               still perfectly redundant with model_task
+#                                   even when pooled -- excluded
+V7_SPECIFIC_EXCLUDE = [
+    "base_cheese_name",              # redundant with food_matrix
+    "physical_form_source", "physical_form_confidence", "physical_form_observed",  # provenance about the physical_form label, not a physical property (observed is constant 0)
+    "endpoint_role",                 # perfect recoding of indicator_group
+    "is_pathogen_indicator",         # redundant with indicator context already captured
+    "canonical_indicator_unit",      # exact duplicate of indicator_unit
+    "split_group",                   # duplicate of context_id
+    "shelf_life_days_v4_original", "target_recalibration_factor", "target_recalibration_note",  # audit trail
+    "routing_category",              # redundant with cheese_category
+    "is_challenge_test",             # perfectly redundant with model_task (kept as a feature)
+    "evidence_class", "observed_fields", "source_url", "source_note",
+    "generation_rule_version", "matrix_profile_confidence", "endpoint_threshold_basis",  # pure provenance/versioning
+    "target_is_lower_bound",         # target-censoring metadata, not a live input
+    "primary_concentration", "primary_concentration_unit",  # superseded by canonical_concentration_value/unit
+]
+EXCLUDED_COLUMNS = ID_COLUMNS + PROVENANCE_COLUMNS + V7_SPECIFIC_EXCLUDE
 CLASS_NAMES = ["Low", "Medium", "High"]
 
 
@@ -141,8 +175,17 @@ def _per_class_block(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, Any]:
 print("=== Formulation Efficacy Classifier -- Training ===\n")
 t_start = time.time()
 
-print("[1/6] Loading workbook + building leakage-safe splits ...")
-full_df = pd.read_excel(XLSX_PATH, sheet_name=SHEET_NAME)
+print("[1/6] Loading V7 specialist CSVs (soft + semi_hard + hard, pooled) + building leakage-safe splits ...")
+v7_frames = [pd.read_csv(p) for p in V7_CSV_PATHS]
+# context_id must not collide across the three category files, or pooling
+# them would silently merge unrelated formulations under one context.
+seen_context_ids: set = set()
+for frame in v7_frames:
+    overlap = seen_context_ids & set(frame["context_id"])
+    assert not overlap, f"context_id collision across V7 files: {sorted(overlap)[:5]}"
+    seen_context_ids |= set(frame["context_id"])
+full_df = pd.concat(v7_frames, ignore_index=True)
+print(f"  loaded {len(full_df)} rows from {len(V7_CSV_PATHS)} V7 files")
 splits = make_context_splits(full_df, seed=SEED)
 train_df_full, val_df_full, test_df_full = splits["train"], splits["validation"], splits["test"]
 
@@ -296,7 +339,9 @@ class_distribution = {
 }
 
 print("\n[6/6] Saving artifacts ...")
-best_model = max(metrics.keys(), key=lambda m: metrics[m]["test"]["macro_f1"])
+# Model selection uses VALIDATION macro F1, never test -- the test split is
+# for final reporting only, after the model is already chosen.
+best_model = max(metrics.keys(), key=lambda m: metrics[m]["validation"]["macro_f1"])
 
 (ARTIFACTS_DIR / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
 (ARTIFACTS_DIR / "confusion_matrix.json").write_text(json.dumps(confusion, indent=2), encoding="utf-8")
@@ -332,18 +377,18 @@ class_definitions = {
 manifest = {
     "created_at_utc": pd.Timestamp.utcnow().isoformat(),
     "random_seed": SEED,
-    "dataset_path": str(XLSX_PATH.relative_to(ROOT)),
-    "sheet": SHEET_NAME,
+    "dataset_paths": [str(p.relative_to(ROOT)) for p in V7_CSV_PATHS],
     "n_total_treated_rows": len(all_labeled),
     "n_train": len(train_labeled), "n_validation": len(val_labeled), "n_test": len(test_labeled),
     "models_trained": list(metrics.keys()),
-    "best_model_by_test_macro_f1": best_model,
+    "best_model_by_validation_macro_f1": best_model,
     "total_training_duration_sec": time.time() - t_start,
 }
 (ARTIFACTS_DIR / "training_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 print(f"\nModels trained: {list(metrics.keys())}")
-print(f"Best model (by test macro F1): {best_model}")
+print(f"Best model (by validation macro F1): {best_model}")
+print(f"  validation macro F1={metrics[best_model]['validation']['macro_f1']:.3f}  test macro F1={metrics[best_model]['test']['macro_f1']:.3f}")
 print(f"Total duration: {manifest['total_training_duration_sec']:.1f}s")
 print(f"Artifacts saved under: {ARTIFACTS_DIR}")
 print("\n=== Training complete. ===")

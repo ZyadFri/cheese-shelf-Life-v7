@@ -17,6 +17,8 @@ artifacts_v7/
 artifacts_classification/
 artifacts_ingredient_ranking/
 artifacts_backup/
+artifacts_classification_pre_v7_backup/
+artifacts_ingredient_ranking_pre_v7_backup/
 model_versions/
 
 # Secrets and local runtime state -- never commit

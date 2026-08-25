@@ -59,6 +59,21 @@ CONCENTRATION_UNIT_CONVERSION: dict[str, tuple[str, float]] = {
 }
 
 
+# A curated, non-redundant subset of CONCENTRATION_UNIT_CONVERSION's keys for
+# live user-input dropdowns (e.g. the classification form) -- the full table
+# above also carries legacy notation variants that only exist because of
+# inconsistent historical data entry (e.g. "% (v/v)" vs "%(w/v)" vs
+# "(w/v) %" all meaning the same thing) and a few non-concentration units
+# picked up from the raw sheet ("hr", "ml", "g", "mg/5 ml"). A new user
+# should be offered one clean spelling per real unit, not every historical
+# variant. Every entry here is still looked up through the same
+# CONCENTRATION_UNIT_CONVERSION table and to_canonical() -- this list only
+# curates what is *offered*, it introduces no new conversion logic.
+STANDARD_INPUT_UNITS: list[str] = [
+    "%", "ppm", "mg/kg", "mg/L", "g/L", "g/kg", "IU/g", "log CFU/g", "% w/v", "% w/w",
+]
+
+
 class UnrecognizedConcentrationUnit(ValueError):
     """Raised when a (value, unit) pair has no verified conversion path.
     Deliberately fails loudly rather than guessing a factor -- see module

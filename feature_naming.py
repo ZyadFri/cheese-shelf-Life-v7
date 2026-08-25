@@ -14,7 +14,7 @@ from __future__ import annotations
 from typing import Any
 
 # raw source column -> human-readable label, covering every one of the
-# classifier's 27 trained features (artifacts_classification/schema.json).
+# classifier's trained features (artifacts_classification/schema.json, V7).
 FEATURE_LABELS: dict[str, str] = {
     "food_matrix": "Cheese type",
     "cheese_category": "Cheese category",
@@ -41,8 +41,12 @@ FEATURE_LABELS: dict[str, str] = {
     "ingredient_count": "Number of ingredients",
     "primary_ingredient_name": "Ingredient",
     "primary_ingredient_family": "Ingredient family",
-    "primary_concentration": "Ingredient concentration",
-    "primary_concentration_unit": "Concentration unit",
+    "canonical_concentration_value": "Ingredient concentration",
+    "canonical_concentration_unit": "Concentration unit",
+    "physical_form": "Physical form",
+    "model_task": "Prediction task",
+    "growth_support": "Microbial growth support",
+    "initial_inoculum_log_cfu_g": "Initial inoculum level",
 }
 
 # Static-unit numeric features (unitless features -- pH, water activity --
@@ -57,13 +61,14 @@ FEATURE_UNITS: dict[str, str] = {
     "headspace_oxygen_pct": "%",
     "headspace_co2_pct": "%",
     "headspace_n2_pct": "%",
+    "initial_inoculum_log_cfu_g": "log CFU/g",
 }
 
 # Numeric features whose unit is itself another column on the same row,
 # rather than a fixed unit (e.g. a concentration reported in "ppm" for one
 # row and "% w/v" for another).
 DYNAMIC_UNIT_SOURCE: dict[str, str] = {
-    "primary_concentration": "primary_concentration_unit",
+    "canonical_concentration_value": "canonical_concentration_unit",
     "indicator_threshold": "indicator_unit",
     "initial_indicator_value": "indicator_unit",
 }
@@ -71,11 +76,24 @@ DYNAMIC_UNIT_SOURCE: dict[str, str] = {
 # Binary (0/1) features displayed as words, not digits.
 BINARY_VALUE_LABELS: dict[str, dict[int, str]] = {
     "pasteurization_applied": {0: "Not pasteurized", 1: "Pasteurized"},
+    "ingredient_count": {0: "No ingredient added (control)", 1: "Ingredient added"},
 }
 
 # Known values whose default underscore-to-space humanization reads oddly.
 _VALUE_OVERRIDES: dict[str, str] = {
     "semi_hard": "Semi-hard",
+    "general_shelf_life": "General shelf life",
+    "safety_endpoint": "Safety endpoint",
+    "no_growth": "No growth",
+    # Concentration units (artifacts_classification's canonical_concentration_unit
+    # values, exact raw casing) are case-sensitive unit notation, not prose --
+    # capitalize-first-letter would turn "mg/kg" into "Mg/kg".
+    "mg/kg": "mg/kg",
+    "% w/v": "% w/v",
+    "% w/w": "% w/w",
+    "IU/g": "IU/g",
+    "log CFU/g": "log CFU/g",
+    "none": "None",
 }
 
 

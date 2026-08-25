@@ -61,8 +61,12 @@ from model_service import make_context_splits  # noqa: E402 -- pure function, no
 
 SEED = 42
 ROOT = Path(__file__).resolve().parent
-XLSX_PATH = ROOT / "data" / "raw" / "CHEESE_SHELF_LIFE_REVISED_READY_TO_TRAIN.xlsx"
-SHEET_NAME = "training_data"
+# V7 migration: pool all three V7 specialist files, same as train_classifier.py
+# (context_id verified not to collide across them).
+V7_CSV_PATHS = [
+    ROOT / "data" / "raw" / f"CHEESE_SHELF_LIFE_V7_{name}_SPECIALIST_CORRECTED.csv"
+    for name in ("SOFT", "SEMI_HARD", "HARD")
+]
 ARTIFACTS_DIR = ROOT / "artifacts_ingredient_ranking"
 TARGET_RAW = "shelf_life_days"
 CLASS_NAMES = ["Low", "Medium", "High"]
@@ -71,8 +75,19 @@ MIN_SAMPLES = 20  # below this, an ingredient's ranking is flagged low-confidenc
 # Context covariates the regression controls for -- deliberately excludes
 # `primary_ingredient_family` (a coarser version of the thing being ranked)
 # and any identifier/provenance column.
-NUMERIC_COVARIATES = ["storage_temperature_c", "primary_concentration", "matrix_ph", "matrix_water_activity"]
-CATEGORICAL_COVARIATES = ["cheese_category", "packaging_type", "application_method"]
+#
+# Concentration uses the canonical value (not raw `primary_concentration`,
+# which mixes six different units -- % w/v, % w/w, IU/g, log CFU/g, mg/kg,
+# none -- as if they were on one numeric scale) via the same verified
+# concentration_units.py conversion V7 already precomputes for every row.
+# The canonical *unit* is its own categorical covariate: converting units
+# fixes cross-unit-family inconsistency (e.g. ppm vs mg/kg), but doesn't make
+# fundamentally different measurement types (a mass fraction vs. a log
+# microbial count vs. a potency unit) numerically comparable -- the ridge
+# needs the unit as a fixed effect to separate scale-of-measurement from an
+# ingredient's own effect, which the original covariate list never had.
+NUMERIC_COVARIATES = ["storage_temperature_c", "canonical_concentration_value", "matrix_ph", "matrix_water_activity"]
+CATEGORICAL_COVARIATES = ["cheese_category", "packaging_type", "application_method", "canonical_concentration_unit"]
 
 
 def build_labeled(df_split: pd.DataFrame) -> pd.DataFrame:
@@ -91,8 +106,15 @@ def build_labeled(df_split: pd.DataFrame) -> pd.DataFrame:
 print("=== Ingredient Efficacy Ranking ===\n")
 t_start = time.time()
 
-print("[1/5] Loading workbook + building leakage-safe splits ...")
-full_df = pd.read_excel(XLSX_PATH, sheet_name=SHEET_NAME)
+print("[1/5] Loading V7 specialist CSVs (soft + semi_hard + hard, pooled) + building leakage-safe splits ...")
+v7_frames = [pd.read_csv(p) for p in V7_CSV_PATHS]
+seen_context_ids: set = set()
+for frame in v7_frames:
+    overlap = seen_context_ids & set(frame["context_id"])
+    assert not overlap, f"context_id collision across V7 files: {sorted(overlap)[:5]}"
+    seen_context_ids |= set(frame["context_id"])
+full_df = pd.concat(v7_frames, ignore_index=True)
+print(f"  loaded {len(full_df)} rows from {len(V7_CSV_PATHS)} V7 files")
 splits = make_context_splits(full_df, seed=SEED)
 train_labeled = build_labeled(splits["train"])
 val_labeled = build_labeled(splits["validation"])
@@ -231,8 +253,7 @@ class_definitions = {
 manifest = {
     "created_at_utc": pd.Timestamp.utcnow().isoformat(),
     "random_seed": SEED,
-    "dataset_path": str(XLSX_PATH.relative_to(ROOT)),
-    "sheet": SHEET_NAME,
+    "dataset_paths": [str(p.relative_to(ROOT)) for p in V7_CSV_PATHS],
     "n_ingredients": len(ranking_df),
     "n_train_rows": len(train_labeled),
     "n_validation_rows": len(val_labeled),

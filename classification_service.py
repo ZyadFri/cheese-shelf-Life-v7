@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import shap
 
+from concentration_units import STANDARD_INPUT_UNITS
 from feature_naming import (
     BINARY_VALUE_LABELS,
     DYNAMIC_UNIT_SOURCE,
@@ -44,6 +45,14 @@ class ClassificationService:
 
     def __init__(self) -> None:
         self.schema = _read_json(ARTIFACTS_DIR / "schema.json")
+        # The trained feature set uses canonical_concentration_value/unit (see
+        # train_classifier.py), so raw primary_concentration_unit is no longer
+        # a trained categorical column and schema.json has no options for it.
+        # The live classification form still needs a raw-unit dropdown to
+        # collect a user's input before it's converted via
+        # concentration_units.to_canonical() (build_candidate_row_v6) -- inject
+        # that list here rather than pretending it's a trained feature.
+        self.schema["categorical_options"]["primary_concentration_unit"] = STANDARD_INPUT_UNITS
         self.metrics = _read_json(ARTIFACTS_DIR / "metrics.json")
         self.confusion = _read_json(ARTIFACTS_DIR / "confusion_matrix.json")
         self.feature_importance = _read_json(ARTIFACTS_DIR / "feature_importance.json")
@@ -57,7 +66,7 @@ class ClassificationService:
         self.numeric_and_binary: list[str] = self.numeric_cols + self.binary_cols
         self.feature_cols: list[str] = self.schema["all_feature_columns"]
         self.class_names: list[str] = self.class_definitions["class_names"]
-        self.best_model: str = self.manifest["best_model_by_test_macro_f1"]
+        self.best_model: str = self.manifest["best_model_by_validation_macro_f1"]
 
         self.tree_pre = joblib.load(MODELS_DIR / "preprocessor_tree.joblib")
         self.models: dict[str, Any] = {

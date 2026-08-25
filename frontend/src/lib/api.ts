@@ -244,14 +244,13 @@ export interface ClassDefinitions {
 export interface ClassificationManifest {
   created_at_utc: string;
   random_seed: number;
-  dataset_path: string;
-  sheet: string;
+  dataset_paths: string[];
   n_total_treated_rows: number;
   n_train: number;
   n_validation: number;
   n_test: number;
   models_trained: string[];
-  best_model_by_test_macro_f1: string;
+  best_model_by_validation_macro_f1: string;
   total_training_duration_sec: number;
   class_definitions: ClassDefinitions;
 }
@@ -393,8 +392,7 @@ export interface IngredientRankingClassDefinitions {
 export interface IngredientRankingManifest {
   created_at_utc: string;
   random_seed: number;
-  dataset_path: string;
-  sheet: string;
+  dataset_paths: string[];
   n_ingredients: number;
   n_train_rows: number;
   n_validation_rows: number;

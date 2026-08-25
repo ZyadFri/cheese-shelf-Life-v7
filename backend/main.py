@@ -510,7 +510,11 @@ def classification_distribution() -> dict:
 @app.get("/api/classification/models")
 def classification_models() -> dict:
     svc = _require_clf()
-    ranked = sorted(svc.available_models, key=lambda m: svc.metrics[m]["test"]["macro_f1"], reverse=True)
+    # Sorted by validation macro F1 -- the same metric used to select the
+    # production model -- so the leaderboard order matches "is_best", not a
+    # different (test-based) ranking. Test metrics remain in the response for
+    # final reporting.
+    ranked = sorted(svc.available_models, key=lambda m: svc.metrics[m]["validation"]["macro_f1"], reverse=True)
     rows = []
     for m in ranked:
         met = svc.metrics[m]
@@ -564,7 +568,12 @@ def classification_predict(req: ClassificationPredictRequest) -> dict:
     if not req.candidates:
         raise HTTPException(400, "At least one candidate is required")
     try:
-        rows = [{**req.shared, **build_candidate_row(c.model_dump())} for c in req.candidates]
+        # build_candidate_row_v6 (not the plain build_candidate_row used by the
+        # legacy /api/predict) -- converts the user's raw concentration
+        # value/unit to canonical_concentration_value/unit via
+        # concentration_units.to_canonical(), matching what the classifier is
+        # now trained on. Reused, not reimplemented (item #2).
+        rows = [{**req.shared, **build_candidate_row_v6(c.model_dump())} for c in req.candidates]
         results = svc.predict_many(req.model, rows)
     except Exception as exc:
         raise HTTPException(400, str(exc)) from exc

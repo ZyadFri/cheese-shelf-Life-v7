@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { IngredientDetailSheet } from "@/components/ingredient-detail-sheet";
 
 const CLASS_BADGE_VARIANT: Record<string, "destructive" | "warning" | "success"> = {
   Low: "destructive",
@@ -20,13 +21,14 @@ const CLASS_ICON: Record<string, React.ComponentType<{ className?: string }>> = 
   High: TrendingUp,
 };
 
-type SortKey = "rank" | "adjusted_effect_pct" | "descriptive_mean_pct" | "n_train";
+type SortKey = "rank" | "adjusted_effect_pct" | "n_train";
 
 export function IngredientTable({ rankings, families }: { rankings: IngredientRanking[]; families: string[] }) {
   const [query, setQuery] = React.useState("");
   const [family, setFamily] = React.useState<string>("all");
   const [sortKey, setSortKey] = React.useState<SortKey>("rank");
   const [sortAsc, setSortAsc] = React.useState(true);
+  const [selected, setSelected] = React.useState<IngredientRanking | null>(null);
 
   const filtered = React.useMemo(() => {
     let rows = rankings;
@@ -77,53 +79,44 @@ export function IngredientTable({ rankings, families }: { rankings: IngredientRa
               <SortableHead label="Rank" active={sortKey === "rank"} asc={sortAsc} onClick={() => toggleSort("rank")} className="w-14" />
               <TableHead>Ingredient</TableHead>
               <TableHead>Family</TableHead>
-              <TableHead className="text-center">Class</TableHead>
+              <TableHead className="text-center">Tier</TableHead>
               <SortableHead label="Adjusted effect" active={sortKey === "adjusted_effect_pct"} asc={sortAsc} onClick={() => toggleSort("adjusted_effect_pct")} className="text-right" />
-              <SortableHead label="Raw mean" active={sortKey === "descriptive_mean_pct"} asc={sortAsc} onClick={() => toggleSort("descriptive_mean_pct")} className="text-right" />
-              <SortableHead label="Train n" active={sortKey === "n_train"} asc={sortAsc} onClick={() => toggleSort("n_train")} className="text-right" />
-              <TableHead className="text-right">Val / test mean</TableHead>
+              <SortableHead label="Data" active={sortKey === "n_train"} asc={sortAsc} onClick={() => toggleSort("n_train")} className="text-right" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.map((r) => {
               const Icon = CLASS_ICON[r.efficacy_class] ?? Minus;
               return (
-                <TableRow key={r.ingredient_name} className="row-interactive">
+                <TableRow key={r.ingredient_name} className="row-interactive cursor-pointer" onClick={() => setSelected(r)}>
                   <TableCell className="numeral text-muted-foreground">{r.rank}</TableCell>
-                  <TableCell className="font-medium text-foreground">
-                    {r.ingredient_name}
-                    {r.low_confidence && <Badge variant="outline" className="ml-1.5 h-4 px-1 text-[9px] text-warning">low n</Badge>}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{r.ingredient_family.replace(/_/g, " ")}</TableCell>
+                  <TableCell className="font-medium capitalize text-foreground">{r.ingredient_name}</TableCell>
+                  <TableCell className="capitalize text-muted-foreground">{r.ingredient_family.replace(/_/g, " ")}</TableCell>
                   <TableCell className="text-center">
                     <Badge variant={CLASS_BADGE_VARIANT[r.efficacy_class] ?? "secondary"} className="h-5 gap-1 px-1.5 text-[10px]">
                       <Icon className="size-2.5" />
                       {r.efficacy_class}
                     </Badge>
                   </TableCell>
-                  <TableCell className="numeral text-right font-medium text-foreground">
+                  <TableCell className="numeral text-right font-semibold text-foreground">
                     {r.adjusted_effect_pct >= 0 ? "+" : ""}{r.adjusted_effect_pct.toFixed(1)}%
                   </TableCell>
-                  <TableCell className="numeral text-right text-muted-foreground">
-                    {r.descriptive_mean_pct >= 0 ? "+" : ""}{r.descriptive_mean_pct.toFixed(1)}%
-                  </TableCell>
-                  <TableCell className="numeral text-right text-muted-foreground">{r.n_train}</TableCell>
-                  <TableCell className="numeral text-right text-muted-foreground">
-                    {r.validation_mean_pct !== null ? `${r.validation_mean_pct >= 0 ? "+" : ""}${r.validation_mean_pct.toFixed(0)}%` : "—"}
-                    {" / "}
-                    {r.test_mean_pct !== null ? `${r.test_mean_pct >= 0 ? "+" : ""}${r.test_mean_pct.toFixed(0)}%` : "—"}
+                  <TableCell className="text-right">
+                    <Badge variant={r.low_confidence ? "warning" : "outline"} className="h-5 px-1.5 text-[10px]">n={r.n_train}</Badge>
                   </TableCell>
                 </TableRow>
               );
             })}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">No ingredients match.</TableCell>
+                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">No ingredients match.</TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
+      <IngredientDetailSheet ingredient={selected} open={selected !== null} onOpenChange={(open) => !open && setSelected(null)} />
     </div>
   );
 }
