@@ -246,6 +246,15 @@ export interface AssistantChatResponse {
   meta?: AssistantRequestMeta;
 }
 
+export interface AssistantHealth {
+  available: boolean;
+  provider: string;
+  model: string | null;
+  reachable: boolean | null;
+  detail: string | null;
+  fallback_providers: string[];
+}
+
 // ── Classification (formulation efficacy class) ──────────────────────────
 
 export interface ClassDefinitions {
@@ -628,6 +637,7 @@ export const api = {
     ),
   assistantChat: (body: { messages: AssistantChatMessage[]; page_context?: Record<string, unknown> }) =>
     request<AssistantChatResponse>("/api/assistant/chat", { method: "POST", body: JSON.stringify(body) }),
+  assistantHealth: () => request<AssistantHealth>("/api/assistant/health"),
 
   // ── V6 specialist architecture ─────────────────────────────────────────
   v6Health: () => request<{ available: boolean; specialists?: Record<string, boolean> }>("/api/v6/health"),

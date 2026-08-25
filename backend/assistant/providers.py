@@ -80,6 +80,13 @@ class LLMProvider(abc.ABC):
         function-calling tool specs. Must return a ProviderMessage."""
         raise NotImplementedError
 
+    def health_check(self) -> dict[str, Any]:
+        """Cheap reachability probe for /api/assistant/health -- must never
+        spend a completion token (no chat() call). Default: unknown (a
+        provider that doesn't override this is reported as such, not as a
+        false negative)."""
+        return {"reachable": None, "detail": "not implemented for this provider"}
+
 
 class OllamaProvider(LLMProvider):
     """Talks to a local Ollama server's /api/chat endpoint (OpenAI-compatible
@@ -137,6 +144,13 @@ class OllamaProvider(LLMProvider):
             content=message.get("content"), tool_calls=tool_calls, raw=data,
             input_tokens=input_tokens, output_tokens=output_tokens, total_tokens=total_tokens,
         )
+
+    def health_check(self) -> dict[str, Any]:
+        try:
+            resp = requests.get(f"{self.base_url}/api/tags", timeout=3.0)
+            return {"reachable": resp.ok, "detail": None if resp.ok else f"HTTP {resp.status_code}"}
+        except requests.exceptions.RequestException as exc:
+            return {"reachable": False, "detail": f"{type(exc).__name__}"}
 
 
 class OpenAICompatibleProvider(LLMProvider):
@@ -202,6 +216,15 @@ class OpenAICompatibleProvider(LLMProvider):
             raise ProviderUnavailableError(f"{self.name} rate-limited (429) after retries: {resp.text[:500]}")
         if resp.status_code >= 500:
             raise ProviderUnavailableError(f"{self.name} server error {resp.status_code}: {resp.text[:500]}")
+        if resp.status_code == 402:
+            # Account-level unavailability (quota/billing exhausted), not a
+            # malformed request -- observed live (2026-08) from Cerebras on
+            # an account without free-tier billing completed. Conceptually
+            # the same class of problem as a 429: this specific account
+            # can't serve the request right now, so a configured fallback
+            # provider should get a chance rather than the whole turn
+            # failing outright.
+            raise ProviderUnavailableError(f"{self.name} payment/quota required (402): {resp.text[:500]}")
         if not resp.ok:
             raise RuntimeError(f"{self.name} API error {resp.status_code}: {resp.text[:1000]}")
 
@@ -216,10 +239,17 @@ class OpenAICompatibleProvider(LLMProvider):
                     args = json.loads(args)
                 except ValueError:
                     args = {}
-            tool_calls.append({
-                "id": tc.get("id") or f"call_{i}",
-                "name": fn.get("name"), "arguments": args or {},
-            })
+            entry = {"id": tc.get("id") or f"call_{i}", "name": fn.get("name"), "arguments": args or {}}
+            # Gemini's OpenAI-compat endpoint attaches extra_content.google.
+            # thought_signature to each tool_call and requires it echoed back
+            # verbatim on the next request in this same conversation, or it
+            # 400s with "Function call is missing a thought_signature"
+            # (verified live, 2026-08) -- carried through opaquely so
+            # AssistantService's echo-back can replay it without needing to
+            # know what it means or which provider produced it.
+            if "extra_content" in tc:
+                entry["provider_extra"] = tc["extra_content"]
+            tool_calls.append(entry)
 
         usage = data.get("usage") or {}
         return ProviderMessage(
@@ -228,6 +258,27 @@ class OpenAICompatibleProvider(LLMProvider):
             output_tokens=usage.get("completion_tokens"),
             total_tokens=usage.get("total_tokens"),
         )
+
+    def health_check(self) -> dict[str, Any]:
+        """GET .../models instead of a real chat() call -- confirms the key/
+        endpoint work without spending a single completion token. If a
+        provider's gateway doesn't expose that route, this degrades to
+        "unknown" rather than a false "unreachable"."""
+        if not self.api_key:
+            return {"reachable": False, "detail": f"{self.api_key_env_var} not set"}
+        try:
+            resp = requests.get(f"{self.base_url}/models", headers=self._headers(), timeout=5.0)
+        except requests.exceptions.RequestException as exc:
+            return {"reachable": False, "detail": f"{type(exc).__name__}"}
+        if resp.status_code in (404, 405):
+            # Cloudflare's OpenAI-compatible gateway returns 405 (not 404)
+            # for GET .../models -- verified live -- while its actual
+            # POST .../chat/completions works fine. Either status here means
+            # "this gateway doesn't support the cheap probe," not "broken."
+            return {"reachable": None, "detail": f"no /models endpoint to probe (HTTP {resp.status_code}, not necessarily an error)"}
+        if resp.status_code in (401, 403):
+            return {"reachable": False, "detail": f"HTTP {resp.status_code} (credential rejected)"}
+        return {"reachable": resp.ok, "detail": None if resp.ok else f"HTTP {resp.status_code}"}
 
 
 class GroqProvider(OpenAICompatibleProvider):
@@ -248,9 +299,17 @@ class GroqProvider(OpenAICompatibleProvider):
 class GeminiProvider(OpenAICompatibleProvider):
     """Google Gemini via its OpenAI-compatible endpoint
     (https://ai.google.dev/gemini-api/docs/openai) -- same request/response
-    shape as Groq, just a different base_url/model. Free tier as of writing:
-    gemini-2.5-flash (15 RPM / 1,500 RPD), gemini-2.5-flash-lite for a higher
-    free RPD if 2.5-flash's request-per-minute limit is the bottleneck."""
+    shape as Groq, just a different base_url/model. Verified live (2026-08):
+    a pinned "gemini-2.5-flash"/"gemini-2.5-flash-lite" now 404s on the
+    OpenAI-compatible endpoint for newer API keys ("no longer available to
+    new users"), even though both still appear in GET .../models. Google's
+    "gemini-flash-latest" alias resolves server-side to a newer preview
+    model (gemini-3.7-flash at time of writing) with an extremely tight
+    free quota (5-20 requests observed before 429); "gemini-flash-lite-latest"
+    resolves to a lighter model with a comfortably higher free quota
+    (6+ rapid requests with zero 429s in live testing) and is used as the
+    default for that reason -- a fast, reliable free tier matters more here
+    than the larger model."""
 
     name = "gemini"
     api_key_env_var = "GEMINI_API_KEY"
@@ -258,7 +317,7 @@ class GeminiProvider(OpenAICompatibleProvider):
     def __init__(self, api_key: str | None = None, model: str | None = None, timeout: float = 60.0):
         super().__init__(timeout=timeout)
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY", "")
-        self.model = model or os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+        self.model = model or os.environ.get("GEMINI_MODEL", "gemini-flash-lite-latest")
         self.base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
 
 
@@ -267,7 +326,14 @@ class CerebrasProvider(OpenAICompatibleProvider):
     tier as of writing: 1M tokens/day, 14,400 requests/day, 30 requests/min,
     an 8K context cap -- and very low latency (Cerebras' wafer-scale
     hardware), which matters more than raw model size for a tool-routing
-    assistant."""
+    assistant. NOTE (verified live, 2026-08): the model catalog Cerebras
+    documents publicly (llama-3.3-70b, llama-4-scout, etc.) does not match
+    what GET .../models actually returns for every account -- some accounts
+    only see a narrower catalog (e.g. gemma-4-31b, gpt-oss-120b), and even
+    models present in the account's own catalog can 402 ("payment
+    required") if that account hasn't completed free-tier billing setup.
+    Always confirm with GET .../models against the real key rather than
+    trusting the public docs' default model name."""
 
     name = "cerebras"
     api_key_env_var = "CEREBRAS_API_KEY"
@@ -275,7 +341,7 @@ class CerebrasProvider(OpenAICompatibleProvider):
     def __init__(self, api_key: str | None = None, model: str | None = None, timeout: float = 60.0):
         super().__init__(timeout=timeout)
         self.api_key = api_key or os.environ.get("CEREBRAS_API_KEY", "")
-        self.model = model or os.environ.get("CEREBRAS_MODEL", "llama-3.3-70b")
+        self.model = model or os.environ.get("CEREBRAS_MODEL", "gpt-oss-120b")
         self.base_url = "https://api.cerebras.ai/v1"
 
 
@@ -285,7 +351,13 @@ class CloudflareProvider(OpenAICompatibleProvider):
     Free tier as of writing: 10,000 Neurons/day (a compute-time budget, not
     a token count -- practically small, so this is best used as a fallback
     rather than the sole production provider). Function-calling support is
-    model-dependent; @cf/meta/llama-3.1-8b-instruct is a confirmed default."""
+    model-dependent and plan-dependent: Cloudflare's own model catalog
+    (GET .../ai/models/search) reports a function_calling property per
+    model, but some function-calling models (e.g. @cf/moonshotai/kimi-k2.7-*)
+    are paid-plan-only and return HTTP 403 on a free account even though
+    they're tagged function_calling=true. @cf/meta/llama-3.3-70b-instruct-fp8-fast
+    is verified (live, 2026-08) to both support tool calling AND be
+    reachable on the free plan -- kept as the default for that reason."""
 
     name = "cloudflare"
     api_key_env_var = "CLOUDFLARE_API_TOKEN"
@@ -297,7 +369,7 @@ class CloudflareProvider(OpenAICompatibleProvider):
         super().__init__(timeout=timeout)
         self.account_id = account_id or os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
         self.api_key = api_key or os.environ.get("CLOUDFLARE_API_TOKEN", "")
-        self.model = model or os.environ.get("CLOUDFLARE_MODEL", "@cf/meta/llama-3.1-8b-instruct")
+        self.model = model or os.environ.get("CLOUDFLARE_MODEL", "@cf/meta/llama-3.3-70b-instruct-fp8-fast")
         if not self.account_id:
             raise RuntimeError("CLOUDFLARE_ACCOUNT_ID is not set; cannot use LLM_PROVIDER=cloudflare.")
         self.base_url = f"https://api.cloudflare.com/client/v4/accounts/{self.account_id}/ai/v1"
@@ -314,6 +386,16 @@ class FallbackProvider(LLMProvider):
         self.primary = primary
         self.fallbacks = fallbacks
         self.name = primary.name  # telemetry defaults to the primary; chat() reports who actually answered
+
+    @property
+    def fallback_names(self) -> list[str]:
+        return [f.name for f in self.fallbacks]
+
+    def health_check(self) -> dict[str, Any]:
+        # Only the primary is checked -- fallback health is reported via the
+        # same benchmark/setup tooling used to configure it in the first
+        # place, not on every /api/assistant/health poll.
+        return self.primary.health_check()
 
     @property
     def ARGS_AS_JSON_STRING(self) -> bool:  # depends on whichever provider actually answers
@@ -338,7 +420,7 @@ class FallbackProvider(LLMProvider):
         raise last_exc
 
 
-_PROVIDER_CLASSES: dict[str, type[LLMProvider]] = {
+PROVIDER_CLASSES: dict[str, type[LLMProvider]] = {
     "ollama": OllamaProvider,
     "groq": GroqProvider,
     "gemini": GeminiProvider,
@@ -348,9 +430,9 @@ _PROVIDER_CLASSES: dict[str, type[LLMProvider]] = {
 
 
 def _build_provider(name: str) -> LLMProvider:
-    cls = _PROVIDER_CLASSES.get(name)
+    cls = PROVIDER_CLASSES.get(name)
     if cls is None:
-        raise ValueError(f"Unknown LLM_PROVIDER: {name!r} (expected one of {sorted(_PROVIDER_CLASSES)})")
+        raise ValueError(f"Unknown LLM_PROVIDER: {name!r} (expected one of {sorted(PROVIDER_CLASSES)})")
     return cls()
 
 

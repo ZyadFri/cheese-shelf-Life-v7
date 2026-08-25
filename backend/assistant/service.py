@@ -2,10 +2,17 @@
 AssistantService -- the only thing backend/main.py's /api/assistant/chat
 endpoint talks to. Owns the system prompt, the tool-dispatch loop, and the
 LLMProvider it happens to be configured with. Never invents numbers itself:
-every dataset/metric/prediction/explanation/reference fact must come back
-through a tool call to model_service.ModelService (or, for the narrow
-deterministic shortcuts in direct_answers.py, straight from the same
-FEATURE_GLOSSARY/PROJECT_OVERVIEW/ModelService the tools themselves read).
+every dataset/metric/prediction/explanation/ranking/reference fact must come
+back through a tool call to one of this app's production services (or, for
+the narrow deterministic shortcuts in direct_answers.py, straight from the
+same FEATURE_GLOSSARY/PROJECT_OVERVIEW/service data the tools themselves
+read).
+
+Receives every current service the app actually has (the legacy global
+ModelService, plus the specialist shelf-life registry, the formulation
+classifier, and the ingredient ranking -- any of the latter three may be
+None if that artifact set isn't built on this checkout; tools degrade to a
+clear error, never a crash, matching the REST routes' own defensive pattern).
 
 No LangChain, no vector DB, no fine-tuning, no RAG -- a manual loop over a
 plain HTTP call to the configured provider.
@@ -17,7 +24,10 @@ import logging
 import os
 from typing import Any
 
+from classification_service import ClassificationService
+from ingredient_ranking_service import IngredientRankingService
 from model_service import ModelService
+from specialist_registry import SpecialistRegistry
 
 from .direct_answers import try_direct_answer
 from .providers import LLMProvider, get_provider
@@ -41,26 +51,31 @@ MAX_TOOL_ROUNDS = int(os.environ.get("ASSISTANT_MAX_TOOL_ROUNDS", "1"))
 MAX_HISTORY_MESSAGES = int(os.environ.get("ASSISTANT_MAX_HISTORY_MESSAGES", "12"))
 
 SYSTEM_PROMPT = """You are the in-app assistant for Shelf-Life Studio, a McGill Food Science \
-research platform that predicts cheese shelf life from formulation, processing, packaging, \
-and storage-condition data.
+research platform. It has three current systems over cheese formulation/processing/packaging/ \
+storage data, plus one legacy one:
+- The CURRENT specialist shelf-life system (get_specialist_info / predict_specialist_shelf_life / \
+explain_specialist_prediction) -- one regression model per cheese category x prediction task. \
+This is what the app's own Prediction page uses; prefer it over the legacy tools below.
+- The CURRENT formulation efficacy classifier (get_classification_info / classify_formulation / \
+explain_classification) -- predicts a Low/Medium/High shelf-life-improvement tier for a full \
+treated formulation vs. a matched control.
+- The CURRENT ingredient efficacy ranking (get_ingredient_ranking) -- an individual ingredient's \
+own context-adjusted effect, precomputed and looked up, never estimated.
+- A legacy global regression model (predict_shelf_life / compare_treatments / explain_prediction \
+/ get_model_metrics) kept for the app's Modeling/Results/Explainability pages -- do not present \
+this as "the" model for the whole app; there is no single best model across all four systems.
 
-You can answer:
-- what the project is about and how its pipeline/models work
-- what a dataset feature means
-- dataset statistics (products, ingredients, indicators, packaging, categories)
-- which model performs best and its metrics
-- shelf-life predictions for a given formulation
-- treatment-vs-control comparisons
-- why a prediction came out the way it did (explanations)
-- general food-science background (spoilage mechanisms, preservation techniques) from your \
-own knowledge
+You can also answer what a dataset feature means, dataset statistics, and general food-science \
+background (spoilage mechanisms, preservation techniques) from your own knowledge.
 
 HARD RULE: you must NEVER invent a project-specific number -- a dataset statistic, a model \
-metric, a prediction, an explanation, or a reference/provenance fact. For any question that \
-needs one of those, call the matching tool and report only what it returns. If a tool \
-returns an error, tell the user what went wrong rather than guessing a number. General \
-food-science knowledge (e.g. "why does low water activity slow spoilage") does not require a \
-tool call.
+metric, a prediction, a classification result, an ingredient's ranked effect, an explanation, or \
+a reference/provenance fact. For any question that needs one of those, call the matching tool \
+and report only what it returns -- in particular, never estimate an ingredient's efficacy from \
+general knowledge if get_ingredient_ranking has an entry for it. If a tool returns an error, \
+tell the user what went wrong rather than guessing a number. If asked "which model is best" \
+without further context, explain that the app has no single best model -- performance depends \
+on which of the four systems above is meant -- and offer to look up a specific one.
 
 This is a compact in-app chat panel, not a long-form writing surface: default to 2-5 \
 concise sentences. Only go longer when the user explicitly asks for more detail. When you \
@@ -68,9 +83,41 @@ report numbers from a tool, use them exactly as returned (round sensibly for rea
 but don't alter the underlying value)."""
 
 
+def _coerce_json_strings(args: dict[str, Any]) -> dict[str, Any]:
+    """Some models (observed live, 2026-08: Cloudflare's Llama-3.3-70b
+    endpoint) return a correctly-typed top-level arguments object but leave
+    a nested array/object field double-encoded as a JSON string --
+    e.g. candidates="[{...}]" instead of candidates=[{...}] -- which a tool
+    expecting a real list would reject. Defensively re-parses any
+    top-level string value that looks like JSON before dispatch; a no-op
+    for the (normal) case where a provider already returns correctly-typed
+    nested values."""
+    coerced = {}
+    for key, value in args.items():
+        if isinstance(value, str) and value[:1] in "[{":
+            try:
+                value = json.loads(value)
+            except ValueError:
+                pass
+        coerced[key] = value
+    return coerced
+
+
 class AssistantService:
-    def __init__(self, model_service: ModelService, provider: LLMProvider | None = None):
-        self.services = {"model_service": model_service}
+    def __init__(
+        self,
+        model_service: ModelService,
+        specialist_registry: SpecialistRegistry | None = None,
+        classification_service: ClassificationService | None = None,
+        ingredient_ranking_service: IngredientRankingService | None = None,
+        provider: LLMProvider | None = None,
+    ):
+        self.services = {
+            "model_service": model_service,
+            "specialist_registry": specialist_registry,
+            "classification_service": classification_service,
+            "ingredient_ranking_service": ingredient_ranking_service,
+        }
         self.model_service = model_service
         self.provider = provider or get_provider()
 
@@ -104,7 +151,7 @@ class AssistantService:
         # instant, and no chance of a hallucinated number since every value
         # comes from the same sources the tools read.
         last_user = next((m["content"] for m in reversed(history) if m.get("role") == "user"), "")
-        direct = try_direct_answer(last_user, self.model_service) if (allow_direct_routing and last_user) else None
+        direct = try_direct_answer(last_user, self.services) if (allow_direct_routing and last_user) else None
         if direct:
             telemetry.routed = direct["routed"]
             telemetry.llm_calls = 0
@@ -133,15 +180,22 @@ class AssistantService:
 
             args_as_string = self.provider.ARGS_AS_JSON_STRING
             messages.append({"role": "assistant", "content": reply.content or "", "tool_calls": [
-                {"id": tc["id"], "type": "function", "function": {
-                    "name": tc["name"],
-                    "arguments": json.dumps(tc["arguments"], default=str) if args_as_string else tc["arguments"],
-                }}
+                {
+                    "id": tc["id"], "type": "function", "function": {
+                        "name": tc["name"],
+                        "arguments": json.dumps(tc["arguments"], default=str) if args_as_string else tc["arguments"],
+                    },
+                    # Opaque provider-specific data that MUST be echoed back
+                    # verbatim (e.g. Gemini's thought_signature) -- see
+                    # providers.py's OpenAICompatibleProvider.chat(). A no-op
+                    # dict update for providers that never set this.
+                    **({"extra_content": tc["provider_extra"]} if tc.get("provider_extra") else {}),
+                }
                 for tc in reply.tool_calls
             ]})
             for tc in reply.tool_calls:
                 name = tc["name"]
-                args = tc["arguments"] or {}
+                args = _coerce_json_strings(tc["arguments"] or {})
                 telemetry.tool_calls.append(name)
                 impl = TOOL_IMPLS.get(name)
                 if impl is None:

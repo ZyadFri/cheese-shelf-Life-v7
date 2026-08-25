@@ -12,12 +12,24 @@ Usage:
 """
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 from typing import Any, Optional
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+
+# Load backend/.env (if present) before anything below reads os.environ --
+# in particular, LLM_PROVIDER/GEMINI_API_KEY/etc. must already be set by the
+# time AssistantService (further down) resolves its provider. Real process
+# environment variables (however they were set -- shell export, systemd,
+# the deployment platform) always win over .env: override=False is
+# load_dotenv's default and is kept explicit here since that precedence is
+# load-bearing, not incidental. Safe to call even with no .env file (no-op).
+from dotenv import load_dotenv  # noqa: E402
+
+load_dotenv(ROOT / "backend" / ".env", override=False)
 
 import numpy as np
 import pandas as pd
@@ -35,7 +47,6 @@ from backend.db import init_db
 
 SERVICE = ModelService()
 CORE_MODELS = [m for m in ("random_forest", "lightgbm", "xgboost", "ebm", "lstm") if m in SERVICE.models]
-ASSISTANT = AssistantService(SERVICE)
 
 # The classifier and the ingredient ranking are each separate,
 # independently-trained artifact sets (artifacts_classification/,
@@ -59,6 +70,15 @@ try:
     SPECIALIST_REGISTRY: SpecialistRegistry | None = SpecialistRegistry()
 except FileNotFoundError:
     SPECIALIST_REGISTRY = None
+
+# Constructed last, once every service it can query exists (even the ones
+# that failed to load above -- AssistantService/its tools treat None the
+# same way the REST routes do: that one capability is unavailable, nothing
+# else is affected).
+ASSISTANT = AssistantService(
+    model_service=SERVICE, specialist_registry=SPECIALIST_REGISTRY,
+    classification_service=CLF_SERVICE, ingredient_ranking_service=ING_SERVICE,
+)
 
 init_db()
 
@@ -329,8 +349,32 @@ def assistant_chat(req: AssistantChatRequest) -> dict:
             page_context=req.page_context,
         )
     except Exception as exc:
-        raise HTTPException(502, str(exc)) from exc
+        # Full detail (which provider, the underlying HTTP error, etc.) is
+        # already logged by AssistantService/providers.py at the point of
+        # failure -- the chat UI gets a short, non-technical message, never
+        # a raw provider response body or anything that could hint at
+        # configuration/secrets.
+        logging.getLogger("shelf_life.assistant").warning("assistant chat failed: %s", exc)
+        raise HTTPException(502, "AI assistant is temporarily unavailable. Please try again in a moment.") from exc
     return _clean(result)
+
+
+@app.get("/api/assistant/health")
+def assistant_health() -> dict:
+    """Safe provider diagnostics for the frontend's status line -- never the
+    key/token itself, only what's already implied by which env var name is
+    set (see providers.py's health_check(), which spends no completion
+    tokens: a /models list call, not a real chat request)."""
+    provider = ASSISTANT.provider
+    reachability = provider.health_check()
+    return {
+        "available": True,
+        "provider": provider.name,
+        "model": getattr(provider, "model", None),
+        "reachable": reachability.get("reachable"),
+        "detail": reachability.get("detail"),
+        "fallback_providers": getattr(provider, "fallback_names", []),
+    }
 
 
 # ── References ───────────────────────────────────────────────────────────────

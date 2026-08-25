@@ -9,8 +9,17 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { api, type AssistantChatMessage, type AssistantRequestMeta, type AssistantToolCall } from "@/lib/api";
+import { api, type AssistantChatMessage, type AssistantHealth, type AssistantRequestMeta, type AssistantToolCall } from "@/lib/api";
 import { usePredictionStore } from "@/components/prediction-store";
+
+const LOCAL_PROVIDERS = new Set(["ollama"]);
+
+function providerStatusText(health: AssistantHealth | null): string | null {
+  if (!health) return null;
+  const label = health.provider.charAt(0).toUpperCase() + health.provider.slice(1);
+  const kind = LOCAL_PROVIDERS.has(health.provider) ? "Local AI" : "Cloud AI";
+  return `${label} · ${kind}`;
+}
 
 interface DisplayMessage {
   role: "user" | "assistant";
@@ -55,6 +64,7 @@ export function AssistantChat() {
   const [messages, setMessages] = React.useState<DisplayMessage[]>([]);
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
+  const [health, setHealth] = React.useState<AssistantHealth | null>(null);
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { lastPrediction } = usePredictionStore();
@@ -62,6 +72,14 @@ export function AssistantChat() {
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, [messages, loading]);
+
+  React.useEffect(() => {
+    // Best-effort, non-blocking -- a failed health check just means no
+    // status subtitle is shown, never an error state for the whole panel.
+    api.assistantHealth().then(setHealth).catch(() => setHealth(null));
+  }, []);
+
+  const providerStatusLabel = providerStatusText(health);
 
   async function send(text: string) {
     const trimmed = text.trim();
@@ -137,7 +155,9 @@ export function AssistantChat() {
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-foreground">Ask AI</p>
-                <p className="truncate text-[11px] text-muted-foreground">Shelf-Life Studio assistant, local &amp; private</p>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  Shelf-Life Studio assistant{providerStatusLabel ? ` · ${providerStatusLabel}` : ""}
+                </p>
               </div>
             </div>
 
