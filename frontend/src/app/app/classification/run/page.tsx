@@ -38,10 +38,8 @@ export default async function ClassificationRunPage() {
           <ArrowLeft className="size-3.5" /> Back to classification overview
         </Link>
         <h1 className="type-h1 text-foreground">Classify a formulation</h1>
-        <p className="type-body mt-2 max-w-[68ch] text-muted-foreground">
-          Estimate whether a complete formulation resembles the Low-, Medium-, or High-improvement treatments
-          learned from the training experiments. The untreated control&rsquo;s shelf life is never requested --
-          the model already learned that relationship during training.
+        <p className="type-body mt-2 max-w-[60ch] text-muted-foreground">
+          Predicts a Low / Medium / High efficacy tier -- no control input needed.
         </p>
       </div>
 

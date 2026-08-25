@@ -8,10 +8,10 @@ import { BarHChart } from "@/components/charts/bar-h-chart";
 import { IngredientTable } from "@/components/ingredient-table";
 
 const METHOD_STEPS = [
-  { icon: Database, title: "Match to control", desc: "Every treated row is paired with its untreated control -- same matrix, storage, packaging." },
-  { icon: GitCompareArrows, title: "Compute improvement", desc: "Relative shelf-life change vs. that matched control, as a percentage, for every row the ingredient appears in." },
-  { icon: FlaskConical, title: "Adjust for context", desc: "A ridge regression controls for cheese category, storage temperature, concentration, pH, water activity, packaging and method -- isolating the ingredient's own contribution." },
-  { icon: Gauge, title: "Check it holds up", desc: "The adjusted ranking is compared against completely held-out validation/test rows, not just the data used to build it." },
+  { icon: Database, title: "Match to control" },
+  { icon: GitCompareArrows, title: "Compute improvement %" },
+  { icon: FlaskConical, title: "Adjust for context (regression)" },
+  { icon: Gauge, title: "Check it holds up out-of-sample" },
 ];
 
 const CLASS_BADGE_VARIANT: Record<string, "destructive" | "warning" | "success"> = {
@@ -58,47 +58,36 @@ export default async function IngredientsPage() {
     <PageBody>
       <PageHeader
         title="Ingredient Efficacy"
-        description="Ranks individual ingredients on their own, independent of any specific formulation -- a separate, complementary system to the formulation-level Classification page."
+        description="Ranks individual ingredients on their own -- complements the formulation-level Classification page."
       />
 
       <Stagger className="mb-8 grid-cols-2 md:grid-cols-4">
-        <KpiCard label="Ingredients ranked" numericValue={manifest.n_ingredients} icon={<Database className="h-4 w-4" />} tone="primary" animateIn sub="Every ingredient in the training set" />
+        <KpiCard label="Ingredients ranked" numericValue={manifest.n_ingredients} icon={<Database className="h-4 w-4" />} tone="primary" animateIn />
         <KpiCard label="Classes" numericValue={class_definitions.class_names.length} icon={<Layers className="h-4 w-4" />} animateIn sub={class_definitions.class_names.join(" / ")} />
-        <KpiCard label="Regression fit" numericValue={manifest.regression_in_sample_r2 * 100} decimals={1} suffix="%" icon={<Target className="h-4 w-4" />} tone="primary" sub="In-sample R², context-adjusted model" />
+        <KpiCard label="Regression fit (R²)" numericValue={manifest.regression_in_sample_r2 * 100} decimals={1} suffix="%" icon={<Target className="h-4 w-4" />} tone="primary" />
         <KpiCard
           label="Out-of-sample stability"
           value={manifest.rank_stability_spearman_vs_test_split !== null ? manifest.rank_stability_spearman_vs_test_split.toFixed(2) : "n/a"}
           icon={<Gauge className="h-4 w-4" />}
           tone="success"
-          sub="Spearman vs. held-out test split"
         />
       </Stagger>
 
       <Reveal>
         <SectionLabel>Method</SectionLabel>
-        <Card className="surface mb-8">
-          <CardHeader>
-            <CardTitle className="text-sm">Two rankings, checked against each other</CardTitle>
-            <CardDescription>
-              A raw average of an ingredient&apos;s outcomes can be misleading if it happened to be tested mostly in favourable
-              conditions. The adjusted ranking below is a regression that controls for context; the simpler raw mean is shown
-              alongside every ingredient, not hidden. The two methods agree on class {manifest.descriptive_vs_adjusted_agreement_pct.toFixed(0)}% of the time --
-              disagreement is exactly where controlling for context changed the answer.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="relative grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-4">
-              <div className="pointer-events-none absolute left-[8%] right-[8%] top-[18px] hidden h-px bg-gradient-to-r from-transparent via-border to-transparent lg:block" />
-              {METHOD_STEPS.map((step, i) => (
-                <div key={step.title} className="group relative">
-                  <div className="relative mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-primary shadow-xs transition-all duration-300 group-hover:border-primary/30 group-hover:shadow-sm">
+        <Card className="surface mb-6">
+          <CardContent className="py-5">
+            <p className="type-body mb-5 text-foreground">
+              A raw average can be misleading if an ingredient happened to be tested mostly in favourable conditions --
+              the adjusted ranking below controls for context. The two methods agree {manifest.descriptive_vs_adjusted_agreement_pct.toFixed(0)}% of the time.
+            </p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4">
+              {METHOD_STEPS.map((step) => (
+                <div key={step.title} className="flex flex-col items-center text-center sm:items-start sm:text-left">
+                  <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-primary">
                     <step.icon className="h-4 w-4" />
                   </div>
-                  <div className="absolute right-0 top-0 font-mono text-[10px] tabular-nums text-muted-foreground">
-                    {String(i + 1).padStart(2, "0")}
-                  </div>
-                  <div className="text-[13px] font-medium text-foreground">{step.title}</div>
-                  <div className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{step.desc}</div>
+                  <div className="text-[12.5px] font-medium leading-snug text-foreground">{step.title}</div>
                 </div>
               ))}
             </div>
@@ -108,10 +97,9 @@ export default async function IngredientsPage() {
 
       <Reveal delay={0.04}>
         <SectionLabel>Class definitions</SectionLabel>
-        <Card className="surface mb-8">
+        <Card className="surface mb-6">
           <CardHeader>
-            <CardTitle className="text-sm">Adjusted effect over matched control</CardTitle>
-            <CardDescription>{class_definitions.description}</CardDescription>
+            <CardTitle className="text-sm text-foreground">Adjusted effect over matched control</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-3">

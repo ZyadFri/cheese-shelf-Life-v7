@@ -192,7 +192,7 @@ export function ClassificationForm({
               icon={Milk}
               step={1}
               title="Cheese & storage conditions"
-              description="Food matrix selection auto-fills the descriptors below from dataset medians -- edit anything you know precisely."
+              description="Food matrix auto-fills the fields below -- edit anything you know precisely."
             />
           </CardHeader>
           <CardContent className="space-y-5">
@@ -308,7 +308,7 @@ export function ClassificationForm({
               icon={TestTube2}
               step={2}
               title="Treatment / preservation strategy"
-              description="Each formulation is classified independently -- add up to 4 to compare their efficacy tiers side by side."
+              description="Add up to 4 to compare side by side."
             />
           </CardHeader>
           <CardContent className="space-y-4">

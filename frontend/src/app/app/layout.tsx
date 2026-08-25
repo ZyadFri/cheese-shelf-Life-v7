@@ -17,15 +17,18 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
     <RequireAuth>
       <PredictionStoreProvider>
         <CommandPaletteProvider>
-          {/* The shared <Ambience /> (mounted once in the root layout) shows
-              through as long as this shell stays transparent. */}
+          {/* The shared <Ambience /> (mounted once in the root layout) is
+              deliberately kept out of the authenticated workspace -- this
+              shell paints its own opaque background so every app page reads
+              as a plain, calm instrument rather than the marketing site's
+              animated colour wash. */}
           <SidebarProvider>
             <AppSidebar />
             {/* min-w-0: without it this flex item defaults to min-width:auto,
                 so a wide table stretches the whole column and produces a
                 page-level horizontal scrollbar instead of scrolling inside
                 its own overflow-x-auto container. */}
-            <SidebarInset className="min-w-0 bg-transparent">
+            <SidebarInset className="min-w-0 bg-background">
               <AppTopbar />
               {children}
             </SidebarInset>
