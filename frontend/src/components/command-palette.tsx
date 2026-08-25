@@ -32,6 +32,7 @@ const PAGES = [
   { href: "/app/prediction", label: "Prediction", icon: Beaker },
   { href: "/app/results", label: "Results", icon: ListOrdered },
   { href: "/app/classification", label: "Classification", icon: Tags },
+  { href: "/app/classification/run", label: "Classify a formulation", icon: Tags },
   { href: "/app/ingredients", label: "Ingredient efficacy", icon: Leaf },
   { href: "/app/explainability", label: "Explainability", icon: Lightbulb },
   { href: "/app/how-it-works", label: "How it works", icon: BookOpenText },

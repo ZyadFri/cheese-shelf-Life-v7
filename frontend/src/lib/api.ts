@@ -318,6 +318,30 @@ export interface ClassificationCandidateInput {
   primary_ingredient_family?: string | null;
 }
 
+/** Mirrors the V6 PredictionSupportLevel pattern, sized to what
+ * classification's assess_support() actually returns (no physical-form or
+ * thin_sample concept here -- those are V6-specific). */
+export type ClassificationSupportLevel = "supported" | "extrapolation" | "unsupported_categorical";
+
+export interface ClassificationUnseenCategorical {
+  feature: string;
+  value: string;
+}
+
+export interface ClassificationExtrapolation {
+  feature: string;
+  value: number;
+  range: { min: number; max: number };
+  detail: string;
+}
+
+export interface ClassificationSupportAssessment {
+  level: ClassificationSupportLevel;
+  unseen_categoricals: ClassificationUnseenCategorical[];
+  extrapolations: ClassificationExtrapolation[];
+  warnings: string[];
+}
+
 export interface ClassificationResult {
   candidate_name: string;
   model: string;
@@ -325,12 +349,34 @@ export interface ClassificationResult {
   predicted_class: string;
   probabilities: Record<string, number>;
   warnings: string[];
+  support: ClassificationSupportAssessment;
   row: Record<string, unknown>;
 }
 
 export interface ClassificationPredictResult {
   results: ClassificationResult[];
   class_definitions: ClassDefinitions;
+}
+
+/** A single source-feature's contribution to one class's score, from a real
+ * per-prediction SHAP explanation -- never a restatement of the static
+ * training-time global feature_importance. `strength` is rank-based (not a
+ * raw SHAP number): Random Forest's SHAP values are in probability units but
+ * XGBoost's are in margin/log-odds units, so raw magnitudes aren't
+ * comparable between models -- see classification_service.py's
+ * explain_local docstring. */
+export interface ClassificationFactor {
+  feature: string;
+  label: string;
+  value: string | number | null;
+  direction: "supports" | "opposes";
+  strength: "strong" | "moderate" | "slight";
+}
+
+export interface ClassificationExplanation {
+  predicted_class: string;
+  class_order: string[];
+  classes: Record<string, { supporting: ClassificationFactor[]; opposing: ClassificationFactor[] }>;
 }
 
 // ── Ingredient efficacy ranking ────────────────────────────────────────────
@@ -599,6 +645,8 @@ export const api = {
   classificationModelDetails: (model: string) => request<ClassificationModelDetails>(`/api/classification/models/${model}/details`),
   classificationPredict: (body: { model: string; shared: Record<string, unknown>; candidates: ClassificationCandidateInput[] }) =>
     request<ClassificationPredictResult>("/api/classification/predict", { method: "POST", body: JSON.stringify(body) }),
+  classificationExplain: (body: { model: string; row: Record<string, unknown>; top_k?: number }) =>
+    request<ClassificationExplanation>("/api/classification/explain", { method: "POST", body: JSON.stringify(body) }),
 
   // ── ingredient efficacy ranking ────────────────────────────────────────
   ingredientRankingHealth: () => request<{ available: boolean }>("/api/ingredients/health"),

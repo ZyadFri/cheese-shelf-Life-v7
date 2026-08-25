@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarHChart } from "@/components/charts/bar-h-chart";
+import { humanizeFeature } from "@/lib/classification-labels";
 
 const CLASS_COLOR: Record<string, string> = {
   Low: "var(--destructive)",
@@ -70,9 +71,9 @@ function DetailsPanel({ details }: { details: ClassificationModelDetails }) {
   const m = details.metrics;
   const permImportance = details.feature_importance.permutation ?? {};
   const nativeImportance = details.feature_importance.native;
-  const permData = Object.entries(permImportance).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 12).reverse().map(([label, value]) => ({ label, value: Number(value.toFixed(4)) }));
+  const permData = Object.entries(permImportance).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 12).reverse().map(([label, value]) => ({ label: humanizeFeature(label), value: Number(value.toFixed(4)) }));
   const nativeData = nativeImportance
-    ? Object.entries(nativeImportance).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 12).reverse().map(([label, value]) => ({ label, value: Number(value.toFixed(4)) }))
+    ? Object.entries(nativeImportance).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 12).reverse().map(([label, value]) => ({ label: humanizeFeature(label), value: Number(value.toFixed(4)) }))
     : null;
 
   return (
@@ -105,20 +106,30 @@ function DetailsPanel({ details }: { details: ClassificationModelDetails }) {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="surface">
           <CardHeader>
-            <CardTitle className="text-xs">Confusion matrix (test split)</CardTitle>
-            <CardDescription>Rows: actual class. Columns: predicted class.</CardDescription>
+            <CardTitle className="text-xs">Where does the model make mistakes?</CardTitle>
+            <CardDescription>
+              Rows are the experimentally observed classes; columns are the classes predicted by the model, on
+              formulations the model never saw during training (the test split). Values on the diagonal are correct
+              classifications -- the darker a diagonal cell, the more often the model got that class right.
+            </CardDescription>
           </CardHeader>
           <CardContent><ConfusionMatrix confusion={details.confusion_matrix} /></CardContent>
         </Card>
         <Card className="surface">
-          <CardHeader><CardTitle className="text-xs">Permutation importance (accuracy drop)</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-xs">Which factors, if removed, hurt accuracy most?</CardTitle>
+            <CardDescription>Measured by scrambling one factor at a time and seeing how much test accuracy drops -- a larger drop means the model relies on that factor more.</CardDescription>
+          </CardHeader>
           <CardContent><BarHChart data={permData} height={280} /></CardContent>
         </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="surface">
-          <CardHeader><CardTitle className="text-xs">Native importance</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-xs">How much weight each factor gets inside the model</CardTitle>
+            <CardDescription>The model&rsquo;s own internal weighting, independent of the accuracy-drop test on the left -- the two usually agree but can rank factors differently.</CardDescription>
+          </CardHeader>
           <CardContent>
             {nativeData ? <BarHChart data={nativeData} color="var(--chart-4)" height={240} /> : (
               <div className="flex h-[240px] items-center justify-center text-xs text-muted-foreground">No native importance for this model family.</div>

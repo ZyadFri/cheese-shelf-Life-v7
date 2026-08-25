@@ -3,8 +3,8 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, X, Loader2, Milk, Thermometer, PackageOpen, Activity, TestTube2,
-  SlidersHorizontal, ClipboardList, Sparkles, TrendingUp, TrendingDown, Minus,
+  Plus, X, Loader2, Milk, PackageOpen, Activity, TestTube2,
+  SlidersHorizontal, Sparkles, ClipboardCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,21 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleTrigger, CollapsiblePanel } from "@/components/ui/collapsible";
+import { ClassificationResults } from "@/components/classification-result";
 
 type Lookup = Record<string, Record<string, unknown>>;
 
 const NONE_INGREDIENT_DESCRIPTORS = { primary_ingredient_family: "none" };
-
-const CLASS_BADGE_VARIANT: Record<string, "destructive" | "warning" | "success"> = {
-  Low: "destructive",
-  Medium: "warning",
-  High: "success",
-};
-const CLASS_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  Low: TrendingDown,
-  Medium: Minus,
-  High: TrendingUp,
-};
 
 interface CandidateState {
   key: string;
@@ -74,6 +65,8 @@ export function ClassificationForm({
   const [submitting, setSubmitting] = React.useState(false);
   const [results, setResults] = React.useState<ClassificationResult[] | null>(null);
 
+  // Non-technical users get the best-validated model automatically; manual
+  // choice lives under "Advanced options" only.
   const [model, setModel] = React.useState(bestModel);
 
   const [foodMatrix, setFoodMatrix] = React.useState(schema.categorical_options.food_matrix[0]);
@@ -195,134 +188,126 @@ export function ClassificationForm({
       <div className="space-y-4">
         <Card className="surface">
           <CardHeader>
-            <div className="flex items-center gap-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
-                <ClipboardList className="size-4" />
-              </span>
-              <CardTitle className="text-sm">Classifier</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Select value={model} onValueChange={(v) => v && setModel(v)}>
-              <SelectTrigger className="w-full max-w-sm"><PrettyValue map={modelLabelMap} /></SelectTrigger>
-              <SelectContent>
-                {modelLabelOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-
-        <Card className="surface">
-          <CardHeader>
-            <SectionHeading
+            <StepHeading
               icon={Milk}
-              number={1}
-              title="Cheese profile"
-              description="Food matrix selection auto-fills the descriptors below from dataset medians."
+              step={1}
+              title="Cheese & storage conditions"
+              description="Food matrix selection auto-fills the descriptors below from dataset medians -- edit anything you know precisely."
             />
           </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Food matrix" required>
-              <Select value={foodMatrix} onValueChange={(v) => v && onFoodMatrixChange(v)}>
-                <SelectTrigger className="w-full"><PrettyValue /></SelectTrigger>
-                <SelectContent>
-                  {schema.categorical_options.food_matrix.map((o) => <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-            {["cheese_category", "matrix_ph", "matrix_water_activity", "matrix_moisture_pct", "matrix_fat_pct", "matrix_protein_pct", "matrix_salt_pct", "matrix_ripening_days"].map((col) => (
-              <AutoField
-                key={col}
-                col={col}
-                schema={schema}
-                value={matrixValues[col]}
-                source={matrixSource[col]}
-                onChange={(v) => { setMatrixValues((prev) => ({ ...prev, [col]: v })); setMatrixSource((prev) => ({ ...prev, [col]: "user" })); }}
-              />
-            ))}
-            <div className="col-span-full">
-              <Button type="button" variant="outline" size="sm" onClick={resetMatrixDefaults}>Reset to dataset defaults</Button>
+          <CardContent className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Field label="Food matrix" required>
+                <Select value={foodMatrix} onValueChange={(v) => v && onFoodMatrixChange(v)}>
+                  <SelectTrigger className="w-full"><PrettyValue /></SelectTrigger>
+                  <SelectContent>
+                    {schema.categorical_options.food_matrix.map((o) => <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              {["cheese_category", "matrix_ph", "matrix_water_activity", "matrix_moisture_pct", "matrix_fat_pct", "matrix_protein_pct", "matrix_salt_pct", "matrix_ripening_days"].map((col) => (
+                <AutoField
+                  key={col}
+                  col={col}
+                  schema={schema}
+                  value={matrixValues[col]}
+                  source={matrixSource[col]}
+                  onChange={(v) => { setMatrixValues((prev) => ({ ...prev, [col]: v })); setMatrixSource((prev) => ({ ...prev, [col]: "user" })); }}
+                />
+              ))}
+              <div className="col-span-full">
+                <Button type="button" variant="outline" size="sm" onClick={resetMatrixDefaults}>Reset to dataset defaults</Button>
+              </div>
             </div>
+
+            <div className="grid gap-4 border-t pt-5 sm:grid-cols-3">
+              <Field label="Storage temperature (°C)" required>
+                <Input type="number" value={storageTemp} onChange={(e) => setStorageTemp(Number(e.target.value))} />
+              </Field>
+              <Field label="Packaging type" required>
+                <Select value={packagingType} onValueChange={(v) => v && setPackagingType(v)}>
+                  <SelectTrigger className="w-full"><PrettyValue /></SelectTrigger>
+                  <SelectContent>
+                    {schema.categorical_options.packaging_type.map((o) => <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Pasteurization applied">
+                <Select value={pasteurizationApplied ? "1" : "0"} onValueChange={(v) => setPasteurizationApplied(v === "1")}>
+                  <SelectTrigger className="w-full"><PrettyValue map={YES_NO} /></SelectTrigger>
+                  <SelectContent><SelectItem value="1">Yes</SelectItem><SelectItem value="0">No</SelectItem></SelectContent>
+                </Select>
+              </Field>
+            </div>
+
+            <div className="grid gap-4 border-t pt-5 sm:grid-cols-3">
+              <Field label="Quality indicator category" required>
+                <Select value={indicatorGroup} onValueChange={(v) => v && setIndicatorGroup(v)}>
+                  <SelectTrigger className="w-full"><PrettyValue /></SelectTrigger>
+                  <SelectContent>
+                    {schema.categorical_options.indicator_group.map((o) => <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Quality indicator" required>
+                <Select value={indicatorType} onValueChange={(v) => v && setIndicatorType(v)}>
+                  <SelectTrigger className="w-full"><PrettyValue /></SelectTrigger>
+                  <SelectContent>
+                    {schema.categorical_options.indicator_type.map((o) => <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Indicator unit" required>
+                <Select value={indicatorUnit} onValueChange={(v) => v && setIndicatorUnit(v)}>
+                  <SelectTrigger className="w-full"><PrettyValue /></SelectTrigger>
+                  <SelectContent>
+                    {schema.categorical_options.indicator_unit.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label={`Threshold (${indicatorUnit})`} required>
+                <Input type="number" value={indicatorThreshold} onChange={(e) => setIndicatorThreshold(Number(e.target.value))} />
+              </Field>
+              <Field label={`Initial value (${indicatorUnit})`} required>
+                <Input type="number" value={initialIndicator} onChange={(e) => setInitialIndicator(Number(e.target.value))} />
+              </Field>
+            </div>
+
+            <Collapsible className="border-t pt-4">
+              <CollapsibleTrigger>
+                <SlidersHorizontal className="size-3.5" /> Advanced options
+              </CollapsibleTrigger>
+              <CollapsiblePanel>
+                <div className="grid gap-4 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <Field label="Headspace O₂ (%)">
+                    <Input type="number" value={headspaceO2} onChange={(e) => setHeadspaceO2(Number(e.target.value))} />
+                  </Field>
+                  <Field label="Headspace CO₂ (%)">
+                    <Input type="number" value={headspaceCO2} onChange={(e) => setHeadspaceCO2(Number(e.target.value))} />
+                  </Field>
+                  <Field label="Headspace N₂ (%)">
+                    <Input type="number" value={headspaceN2} onChange={(e) => setHeadspaceN2(Number(e.target.value))} />
+                  </Field>
+                  <Field label="Classifier model">
+                    <Select value={model} onValueChange={(v) => v && setModel(v)}>
+                      <SelectTrigger className="w-full"><PrettyValue map={modelLabelMap} /></SelectTrigger>
+                      <SelectContent>
+                        {modelLabelOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                </div>
+              </CollapsiblePanel>
+            </Collapsible>
           </CardContent>
         </Card>
 
         <Card className="surface">
           <CardHeader>
-            <SectionHeading icon={Thermometer} number={2} title="Processing" />
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-3">
-            <Field label="Pasteurization applied">
-              <Select value={pasteurizationApplied ? "1" : "0"} onValueChange={(v) => setPasteurizationApplied(v === "1")}>
-                <SelectTrigger className="w-full"><PrettyValue map={YES_NO} /></SelectTrigger>
-                <SelectContent><SelectItem value="1">Yes</SelectItem><SelectItem value="0">No</SelectItem></SelectContent>
-              </Select>
-            </Field>
-          </CardContent>
-        </Card>
-
-        <Card className="surface">
-          <CardHeader>
-            <SectionHeading icon={PackageOpen} number={3} title="Storage & packaging" />
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <Field label="Storage temperature (°C)" required>
-              <Input type="number" value={storageTemp} onChange={(e) => setStorageTemp(Number(e.target.value))} />
-            </Field>
-            <Field label="Packaging type" required>
-              <Select value={packagingType} onValueChange={(v) => v && setPackagingType(v)}>
-                <SelectTrigger className="w-full"><PrettyValue /></SelectTrigger>
-                <SelectContent>
-                  {schema.categorical_options.packaging_type.map((o) => <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-          </CardContent>
-        </Card>
-
-        <Card className="surface">
-          <CardHeader>
-            <SectionHeading icon={Activity} number={4} title="Indicator" />
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-3">
-            <Field label="Indicator group" required>
-              <Select value={indicatorGroup} onValueChange={(v) => v && setIndicatorGroup(v)}>
-                <SelectTrigger className="w-full"><PrettyValue /></SelectTrigger>
-                <SelectContent>
-                  {schema.categorical_options.indicator_group.map((o) => <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Indicator type" required>
-              <Select value={indicatorType} onValueChange={(v) => v && setIndicatorType(v)}>
-                <SelectTrigger className="w-full"><PrettyValue /></SelectTrigger>
-                <SelectContent>
-                  {schema.categorical_options.indicator_type.map((o) => <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Indicator unit" required>
-              <Select value={indicatorUnit} onValueChange={(v) => v && setIndicatorUnit(v)}>
-                <SelectTrigger className="w-full"><PrettyValue /></SelectTrigger>
-                <SelectContent>
-                  {schema.categorical_options.indicator_unit.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label={`Threshold (${indicatorUnit})`} required>
-              <Input type="number" value={indicatorThreshold} onChange={(e) => setIndicatorThreshold(Number(e.target.value))} />
-            </Field>
-            <Field label={`Initial value (${indicatorUnit})`} required>
-              <Input type="number" value={initialIndicator} onChange={(e) => setInitialIndicator(Number(e.target.value))} />
-            </Field>
-          </CardContent>
-        </Card>
-
-        <Card className="surface">
-          <CardHeader>
-            <SectionHeading
+            <StepHeading
               icon={TestTube2}
-              number={5}
-              title="Treatment formulations"
+              step={2}
+              title="Treatment / preservation strategy"
               description="Each formulation is classified independently -- add up to 4 to compare their efficacy tiers side by side."
             />
           </CardHeader>
@@ -404,83 +389,14 @@ export function ClassificationForm({
           </CardContent>
         </Card>
 
-        <Card className="surface">
-          <CardHeader>
-            <SectionHeading icon={SlidersHorizontal} number={6} title="Advanced parameters" />
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-3">
-            <Field label="Headspace O₂ (%)">
-              <Input type="number" value={headspaceO2} onChange={(e) => setHeadspaceO2(Number(e.target.value))} />
-            </Field>
-            <Field label="Headspace CO₂ (%)">
-              <Input type="number" value={headspaceCO2} onChange={(e) => setHeadspaceCO2(Number(e.target.value))} />
-            </Field>
-            <Field label="Headspace N₂ (%)">
-              <Input type="number" value={headspaceN2} onChange={(e) => setHeadspaceN2(Number(e.target.value))} />
-            </Field>
-          </CardContent>
-        </Card>
-
         {results && (
-          <Card className="surface">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
-                  <Sparkles className="size-4" />
-                </span>
-                <div>
-                  <CardTitle className="text-sm">Classification results</CardTitle>
-                  <CardDescription className="mt-0.5">
-                    Low: below {classDefinitions.thresholds_pct.low_max.toFixed(1)}% improvement over a matched control · Medium: {classDefinitions.thresholds_pct.low_max.toFixed(1)}–{classDefinitions.thresholds_pct.medium_max.toFixed(1)}% · High: {classDefinitions.thresholds_pct.medium_max.toFixed(1)}%+
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {results.map((r) => {
-                const Icon = CLASS_ICON[r.predicted_class] ?? Minus;
-                const confidence = r.probabilities[r.predicted_class] ?? 0;
-                return (
-                  <div key={r.candidate_name} className="rounded-lg border p-4">
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-sm font-semibold text-foreground">{r.candidate_name}</span>
-                      <Badge variant={CLASS_BADGE_VARIANT[r.predicted_class] ?? "secondary"} className="h-6 gap-1 px-2 text-[11px]">
-                        <Icon className="size-3" />
-                        {r.predicted_class} efficacy
-                      </Badge>
-                    </div>
-                    <div className="mb-2 text-xs text-muted-foreground">
-                      {r.model_label} · {(confidence * 100).toFixed(0)}% confidence
-                    </div>
-                    <div className="space-y-1.5">
-                      {classDefinitions.class_names.map((cls) => (
-                        <div key={cls} className="flex items-center gap-2">
-                          <span className="w-14 shrink-0 text-[11px] text-muted-foreground">{cls}</span>
-                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
-                            <div
-                              className="h-full rounded-full"
-                              style={{
-                                width: `${((r.probabilities[cls] ?? 0) * 100).toFixed(1)}%`,
-                                background: cls === "Low" ? "var(--destructive)" : cls === "Medium" ? "var(--warning)" : "var(--success)",
-                              }}
-                            />
-                          </div>
-                          <span className="w-9 shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground">
-                            {((r.probabilities[cls] ?? 0) * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    {r.warnings.length > 0 && (
-                      <ul className="mt-2.5 space-y-0.5 border-t pt-2 text-[11px] text-warning">
-                        {r.warnings.map((w, i) => <li key={i}>⚠ {w}</li>)}
-                      </ul>
-                    )}
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
+          <div>
+            <div className="mb-3 flex items-center gap-2">
+              <Sparkles className="size-4 text-primary" />
+              <h2 className="type-h3 text-foreground">Classification results</h2>
+            </div>
+            <ClassificationResults results={results} classDefinitions={classDefinitions} />
+          </div>
         )}
       </div>
 
@@ -492,12 +408,12 @@ export function ClassificationForm({
           />
           <Card className="surface">
             <CardHeader>
-              <CardTitle className="text-sm">Summary</CardTitle>
-              <CardDescription>Review before classifying.</CardDescription>
+              <StepHeading icon={ClipboardCheck} step={3} title="Review formulation" description="Check everything below before classifying." />
             </CardHeader>
             <CardContent className="space-y-3 text-xs">
               <SummaryRow label="Food matrix" value={foodMatrix.replace(/_/g, " ")} />
               <SummaryRow label="Storage" value={`${storageTemp} °C · ${packagingType.replace(/_/g, " ")}`} />
+              <SummaryRow label="Quality indicator" value={indicatorType.replace(/_/g, " ")} />
               <SummaryRow label="Formulations" value={`${candidates.length} to classify`} />
               <AnimatePresence initial={false}>
                 {candidates.map((c) => (
@@ -521,7 +437,7 @@ export function ClassificationForm({
                 onClick={handleSubmit}
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                {submitting ? "Classifying…" : "Classify"}
+                {submitting ? "Classifying…" : "Classify formulation"}
               </Button>
               {requiredMissing && <p className="text-[11px] text-destructive">Fill in every required (*) field to enable classification.</p>}
             </CardContent>
@@ -532,20 +448,21 @@ export function ClassificationForm({
   );
 }
 
-function SectionHeading({
-  icon: Icon, number, title, description,
+function StepHeading({
+  icon: Icon, step, title, description,
 }: {
-  icon: React.ComponentType<{ className?: string }>; number: number; title: string; description?: string;
+  icon: React.ComponentType<{ className?: string }>; step: number; title: string; description?: string;
 }) {
   return (
     <div className="flex items-center gap-3">
       <span className="relative flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
         <Icon className="size-4" />
         <span className="absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full border border-border bg-card font-mono text-[0.5625rem] text-subtle-foreground">
-          {number}
+          {step}
         </span>
       </span>
       <div className="min-w-0">
+        <div className="type-eyebrow text-subtle-foreground">Step {step}</div>
         <CardTitle className="text-sm">{title}</CardTitle>
         {description && <CardDescription className="mt-0.5">{description}</CardDescription>}
       </div>

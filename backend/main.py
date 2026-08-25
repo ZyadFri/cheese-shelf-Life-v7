@@ -571,6 +571,27 @@ def classification_predict(req: ClassificationPredictRequest) -> dict:
     return _clean({"results": results, "class_definitions": svc.class_definitions})
 
 
+class ClassificationExplainRequest(BaseModel):
+    model: str
+    row: dict[str, Any]
+    top_k: int = 5
+
+
+@app.post("/api/classification/explain")
+def classification_explain(req: ClassificationExplainRequest) -> dict:
+    """Real per-prediction (local) SHAP explanation -- separate from
+    /predict so the initial classify submission (up to 4 candidates) never
+    pays SHAP's cost; the frontend calls this once the prediction result is
+    already on screen, mirroring the regression pipeline's /api/explain/local
+    follow-up-fetch pattern."""
+    svc = _require_clf()
+    try:
+        explanation = svc.explain_local(req.model, req.row, top_k=req.top_k)
+    except Exception as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return _clean(explanation)
+
+
 # ── Ingredient efficacy ranking ─────────────────────────────────────────────
 #
 # A third, independent system from both the regression models above and the

@@ -32,6 +32,7 @@ const ROUTES: Record<string, { label: string; icon: typeof Home }> = {
   "/app/prediction": { label: "Prediction", icon: FlaskConical },
   "/app/results": { label: "Results", icon: GitCompare },
   "/app/classification": { label: "Classification", icon: Tags },
+  "/app/classification/run": { label: "Classify a formulation", icon: Tags },
   "/app/ingredients": { label: "Ingredient Efficacy", icon: Leaf },
   "/app/explainability": { label: "Explainability", icon: Lightbulb },
   "/app/how-it-works": { label: "How it works", icon: Sparkles },
