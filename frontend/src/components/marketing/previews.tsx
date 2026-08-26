@@ -59,7 +59,7 @@ export function SpecialistPreview() {
           </div>
         ))}
       </div>
-      <p className="mt-3 text-[0.52rem] text-subtle-foreground">
+      <p className="mt-3 text-[0.52rem] text-[#9a7180]">
         Validation R² · shelf-life specialists
       </p>
     </div>
@@ -142,60 +142,144 @@ function Sparkline({ tone = "burgundy" }: { tone?: "burgundy" | "green" }) {
   );
 }
 
+function ErrorSparkline() {
+  return (
+    <svg aria-hidden viewBox="0 0 120 34" className="mt-2 h-8 w-full overflow-visible">
+      <path
+        d="M2 16 C13 27 22 8 34 17 S53 26 65 12 S84 25 95 15 S108 13 118 7"
+        fill="none"
+        stroke="#c63154"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      {[2, 34, 65, 95, 118].map((x, i) => (
+        <circle key={x} cx={x} cy={[16, 17, 12, 15, 7][i]} r="2.2" fill="#c63154" />
+      ))}
+    </svg>
+  );
+}
+
+function PredictionBars() {
+  const heights = [22, 39, 31, 56, 44, 67, 49, 82, 61, 94];
+  return (
+    <div aria-hidden className="mt-2 flex h-12 items-end gap-[4px]">
+      {heights.map((height, i) => (
+        <span
+          key={`${height}-${i}`}
+          className="w-[6px] rounded-t-[2px] bg-[linear-gradient(180deg,#d26480,#8f1735)]"
+          style={{ height: `${height}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 const HERO_STATS = [
   { value: "34k", label: "Rows", tone: "burgundy" as const },
   { value: "8.5k", label: "Contexts", tone: "green" as const },
   { value: "6", label: "Specialists", note: "3 cheese classes × 2 tasks" },
 ];
 
+function PreviewPhoto({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div className="group/photo relative min-h-[102px] overflow-hidden rounded-xl border border-[#eadde1] bg-[#f4ecee]">
+      <img
+        src={src}
+        alt={alt}
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(.16,1,.3,1)] group-hover/photo:scale-[1.045]"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#2c151c]/18 via-transparent to-white/5" />
+    </div>
+  );
+}
+
 export function HeroProductPreview() {
   return (
-    <div className="overflow-hidden rounded-[18px] border border-border bg-background shadow-[0_26px_60px_-28px_rgba(13,14,16,0.28)]">
-      <div className="flex h-10 items-center justify-between border-b border-border px-4">
-        <span className="text-[0.69rem] font-semibold tracking-[-0.01em] text-foreground">
-          Shelf-Life Studio
-        </span>
-        <span className="text-[0.55rem] text-subtle-foreground">Overview · V7</span>
+    <div className="relative isolate">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-y-12 -right-14 left-[31%] -z-10 overflow-hidden rounded-[46%_0_0_42%] opacity-85 shadow-[0_36px_78px_-46px_rgba(66,42,34,.48)]"
+      >
+        <img src="/marketing/cheese-aging.jpg" alt="" className="h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,249,251,.83),rgba(255,249,251,.1)_48%,rgba(255,249,251,.08))]" />
       </div>
 
-      <div className="flex">
-        <div className="hidden w-[118px] shrink-0 border-r border-border bg-[#fbfbfc] p-2.5 sm:block">
-          {["Overview", "Prediction", "Classification", "Ingredients", "Modeling"].map((item, i) => (
-            <div
-              key={item}
-              className={cn(
-                "rounded-md px-2 py-[6px] text-[0.58rem]",
-                i === 0 ? "bg-primary/[0.075] font-semibold text-primary" : "text-muted-foreground",
-              )}
-            >
-              {item}
-            </div>
-          ))}
+      <div className="overflow-hidden rounded-[20px] border border-[#e5dade] bg-white/94 shadow-[0_30px_70px_-34px_rgba(35,23,28,.34)] backdrop-blur-sm">
+        <div className="flex h-10 items-center justify-between border-b border-[#ece3e6] px-4">
+          <span className="text-[0.69rem] font-semibold tracking-[-0.01em] text-foreground">
+            Shelf-Life Studio
+          </span>
+          <span className="rounded-full bg-[#f7e8ed] px-2 py-1 text-[0.52rem] font-medium text-[#8a5c68]">
+            Overview · V7
+          </span>
         </div>
 
-        <div className="min-w-0 flex-1 p-3.5">
-          <div className="grid grid-cols-3 gap-2.5">
-            {HERO_STATS.map((s) => (
-              <div key={s.label} className="min-h-[96px] rounded-xl border border-border p-3">
-                <p className="text-[0.52rem] text-subtle-foreground">{s.label}</p>
-                <p className="numeral mt-1 text-[1.22rem] leading-none font-semibold tracking-[-0.035em] text-foreground">
-                  {s.value}
-                </p>
-                {s.tone ? (
-                  <Sparkline tone={s.tone} />
-                ) : (
-                  <p className="mt-4 text-[0.48rem] leading-3.5 text-subtle-foreground">{s.note}</p>
+        <div className="flex">
+          <div className="hidden w-[118px] shrink-0 border-r border-[#ece3e6] bg-[linear-gradient(180deg,#fff8fa,#fdfbfc)] p-2.5 sm:block">
+            {["Overview", "Prediction", "Classification", "Ingredients", "Modeling"].map((item, i) => (
+              <div
+                key={item}
+                className={cn(
+                  "rounded-lg px-2 py-[6px] text-[0.58rem] transition-colors",
+                  i === 0
+                    ? "bg-[#f4e5ea] font-semibold text-primary"
+                    : "text-[#74676d] hover:bg-white/75 hover:text-foreground",
                 )}
+              >
+                {item}
               </div>
             ))}
           </div>
 
-          <div className="mt-2.5 grid gap-2.5 lg:grid-cols-[1.1fr_1fr]">
-            <div className="rounded-xl border border-border">
-              <LeaderboardPreview compact />
+          <div className="min-w-0 flex-1 p-3.5">
+            <div className="grid grid-cols-3 gap-2.5">
+              {HERO_STATS.map((s) => (
+                <div
+                  key={s.label}
+                  className="min-h-[96px] rounded-xl border border-[#eadfe2] bg-[linear-gradient(145deg,#fff,#fff8fa)] p-3 shadow-[0_10px_24px_-24px_rgba(89,42,56,.28)]"
+                >
+                  <p className="text-[0.52rem] font-medium text-[#9a7480]">{s.label}</p>
+                  <p className="numeral mt-1 text-[1.22rem] leading-none font-semibold tracking-[-0.035em] text-foreground">
+                    {s.value}
+                  </p>
+                  {s.tone ? (
+                    <Sparkline tone={s.tone} />
+                  ) : (
+                    <p className="mt-4 text-[0.48rem] leading-3.5 text-[#a17e88]">{s.note}</p>
+                  )}
+                </div>
+              ))}
             </div>
-            <div className="rounded-xl border border-border">
-              <SpecialistPreview />
+
+            <div className="mt-2.5 grid gap-2.5 lg:grid-cols-[1.1fr_1fr]">
+              <div className="rounded-xl border border-[#eadfe2] bg-white/88">
+                <LeaderboardPreview compact />
+              </div>
+              <div className="rounded-xl border border-[#eadfe2] bg-[linear-gradient(145deg,#fff,#fff9fb)]">
+                <SpecialistPreview />
+              </div>
+            </div>
+
+            <div className="mt-2.5 grid grid-cols-2 gap-2.5 lg:grid-cols-[.92fr_1.05fr_.92fr_1.05fr]">
+              <div className="min-h-[102px] rounded-xl border border-[#eadfe2] bg-[linear-gradient(145deg,#fff,#fff7fa)] p-3">
+                <p className="text-[0.49rem] font-medium text-[#9b7480]">Average prediction error</p>
+                <p className="numeral mt-1 text-[1.08rem] font-semibold tracking-[-0.035em] text-foreground">
+                  2.31 <span className="text-[0.46rem] font-medium text-[#9b7480]">days</span>
+                </p>
+                <p className="mt-0.5 text-[0.45rem] font-medium text-success">↓ 12% vs last week</p>
+                <ErrorSparkline />
+              </div>
+
+              <PreviewPhoto src="/marketing/cheese-cave.jpg" alt="Cheese aging shelves" />
+
+              <div className="min-h-[102px] rounded-xl border border-[#eadfe2] bg-[linear-gradient(145deg,#fff,#fff7fa)] p-3">
+                <p className="text-[0.49rem] font-medium text-[#9b7480]">Predictions this month</p>
+                <p className="numeral mt-1 text-[1.08rem] font-semibold tracking-[-0.035em] text-foreground">1,842</p>
+                <p className="mt-0.5 text-[0.45rem] font-medium text-success">↑ 18% vs last month</p>
+                <PredictionBars />
+              </div>
+
+              <PreviewPhoto src="/marketing/lab.jpg" alt="Food science laboratory work" />
             </div>
           </div>
         </div>
