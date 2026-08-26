@@ -3,7 +3,7 @@
 import * as React from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Send, X, Loader2, Wrench } from "lucide-react";
+import { Sparkles, Send, Loader2, Wrench } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -74,8 +74,6 @@ export function AssistantChat() {
   }, [messages, loading]);
 
   React.useEffect(() => {
-    // Best-effort, non-blocking -- a failed health check just means no
-    // status subtitle is shown, never an error state for the whole panel.
     api.assistantHealth().then(setHealth).catch(() => setHealth(null));
   }, []);
 
@@ -115,29 +113,28 @@ export function AssistantChat() {
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.4, duration: 0.3 }}
+        initial={{ opacity: 0, y: 8, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ delay: 0.35, duration: 0.28 }}
         className="fixed bottom-6 right-6 z-40"
       >
-        <Button
+        <button
           onClick={() => setOpen((v) => !v)}
-          size="icon"
-          className="h-13 w-13 rounded-full shadow-lg"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#8c1737] bg-[linear-gradient(135deg,#a31d42,#7b1631)] px-4 text-[0.72rem] font-semibold text-white shadow-[0_16px_34px_-18px_rgba(122,22,49,.7)] transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-18px_rgba(122,22,49,.76)]"
           aria-label={open ? "Close AI assistant" : "Open AI assistant"}
         >
           <AnimatePresence mode="wait" initial={false}>
             {open ? (
-              <motion.span key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                <X className="h-5 w-5" />
+              <motion.span key="close" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
+                Close
               </motion.span>
             ) : (
-              <motion.span key="sparkle" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                <Sparkles className="h-5 w-5" />
+              <motion.span key="label" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
+                Ask Shelf-Life AI
               </motion.span>
             )}
           </AnimatePresence>
-        </Button>
+        </button>
       </motion.div>
 
       <AnimatePresence>
@@ -147,10 +144,10 @@ export function AssistantChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed bottom-24 right-6 z-40 flex h-[min(640px,calc(100vh-8rem))] w-[min(400px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-xl border bg-popover shadow-lg"
+            className="fixed bottom-24 right-6 z-40 flex h-[min(640px,calc(100vh-8rem))] w-[min(400px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-[18px] border border-[#eadde1] bg-white shadow-[0_28px_70px_-38px_rgba(73,27,42,.54)]"
           >
-            <div className="flex shrink-0 items-center gap-2.5 border-b bg-secondary/40 px-4 py-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+            <div className="flex shrink-0 items-center gap-2.5 border-b border-[#eee2e5] bg-[linear-gradient(90deg,#fffafd,#fff4f7)] px-4 py-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f7e7ec]">
                 <Sparkles className="h-4 w-4 text-primary" />
               </div>
               <div className="min-w-0">
