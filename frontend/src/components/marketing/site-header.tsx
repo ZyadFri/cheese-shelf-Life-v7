@@ -71,6 +71,12 @@ main > section:first-of-type > div:last-child > div {
   box-shadow: 0 20px 48px -34px rgba(79, 32, 47, .36) !important;
   backdrop-filter: blur(18px);
 }
+main #research {
+  background:
+    radial-gradient(circle at 86% 22%, rgba(155,28,60,.055), transparent 25rem),
+    radial-gradient(circle at 4% 82%, rgba(238,207,216,.34), transparent 21rem),
+    linear-gradient(180deg, #fffefe 0%, #fff9fb 100%) !important;
+}
 main #platform h2,
 main #pipeline h2,
 main #validation h2 {
@@ -133,7 +139,7 @@ export function SiteHeader() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "shelf-nav-link group/nav relative overflow-hidden rounded-full px-3.5 py-2 text-[0.73rem] font-medium transition-[color,background-color,box-shadow,transform] duration-250 hover:-translate-y-px hover:bg-white/66 hover:text-primary hover:shadow-[0_12px_28px_-22px_rgba(122,27,46,.82)]",
+                  "shelf-nav-link group/nav relative overflow-hidden rounded-full px-3.5 py-2 text-[0.73rem] font-medium transition-[color,background-color,box-shadow,transform] duration-200 hover:-translate-y-px hover:bg-white/66 hover:text-primary hover:shadow-[0_12px_28px_-22px_rgba(122,27,46,.82)]",
                   index === 0 ? "bg-white/56 text-primary" : "text-[#665b60]",
                 )}
               >
