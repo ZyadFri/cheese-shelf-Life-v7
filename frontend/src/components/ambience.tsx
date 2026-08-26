@@ -96,7 +96,7 @@ export function Ambience() {
       {/* Conic sheen — a slow-rotating wash of light beneath the aurora. */}
       <motion.div
         style={{ rotate: sheenRotate }}
-        className="absolute top-1/2 left-1/2 size-[140vmax] -translate-x-1/2 -translate-y-1/2 opacity-[0.09] will-change-transform"
+        className="absolute top-1/2 left-1/2 size-[140vmax] -translate-x-1/2 -translate-y-1/2 opacity-[0.05] will-change-transform"
       >
         <div
           className="size-full"
@@ -124,7 +124,7 @@ export function Ambience() {
           style={{ y: yA, x: xA }}
           animate={{ scale: [1, 1.14, 0.96, 1.05, 1] }}
           transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-[26%] -left-[12%] size-[68rem] opacity-[0.16] blur-[115px] will-change-transform
+          className="absolute -top-[26%] -left-[12%] size-[68rem] opacity-[0.10] blur-[120px] will-change-transform
                      bg-[radial-gradient(circle,color-mix(in_srgb,#3E6FA8_88%,transparent),transparent_70%)]
                      motion-safe:animate-[blob-morph-a_22s_ease-in-out_infinite]"
         />
@@ -132,7 +132,7 @@ export function Ambience() {
           style={{ y: yC, x: xC }}
           animate={{ scale: [0.94, 1.12, 0.98, 1.06, 0.94] }}
           transition={{ duration: 38, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -bottom-[22%] left-[14%] size-[56rem] opacity-[0.18] blur-[115px] will-change-transform
+          className="absolute -bottom-[22%] left-[14%] size-[56rem] opacity-[0.09] blur-[120px] will-change-transform
                      bg-[radial-gradient(circle,color-mix(in_srgb,#3E6FA8_85%,transparent),transparent_70%)]
                      motion-safe:animate-[blob-morph-c_31s_ease-in-out_infinite]"
         />
@@ -142,21 +142,21 @@ export function Ambience() {
           style={{ y: yE, opacity: opacityE }}
           animate={{ scale: [1.05, 0.92, 1.08, 1.05] }}
           transition={{ duration: 34, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[120%] -left-[10%] size-[52rem] blur-[100px] opacity-[0.16] will-change-transform
+          className="absolute top-[120%] -left-[10%] size-[52rem] blur-[110px] opacity-[0.08] will-change-transform
                      bg-[radial-gradient(circle,color-mix(in_srgb,#3E6FA8_85%,transparent),transparent_70%)]
                      motion-safe:animate-[blob-morph-c_29s_ease-in-out_infinite]"
         />
       </div>
 
-      {/* Cursor spotlight — follows the pointer with a lag spring. Present
-          enough that moving your mouse visibly reads as "the page is alive". */}
-      <div className="absolute -inset-[10%] opacity-[0.2]">
+      {/* Cursor spotlight — follows the pointer with a lag spring. Kept very
+          faint: this is a research product, not an interactive toy. */}
+      <div className="absolute -inset-[10%] opacity-[0.1]">
         <SpotlightPaint x={spotlightX} y={spotlightY} />
       </div>
 
       {/* Dot grid, faded at the edges */}
       <div
-        className="absolute inset-0 opacity-[0.14] [mask-image:radial-gradient(ellipse_75%_60%_at_50%_20%,black,transparent)]"
+        className="absolute inset-0 opacity-[0.09] [mask-image:radial-gradient(ellipse_75%_50%_at_50%_12%,black,transparent)]"
         style={{ backgroundImage: DOT_GRID, backgroundSize: "28px 28px" }}
       />
 

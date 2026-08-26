@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono, Fraunces } from "next/font/google";
+import { Inter, JetBrains_Mono, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -33,18 +33,18 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 /**
- * Fraunces — a warm, editorial display serif with a huge optical-size range,
- * used for the largest display headings (hero, section titles). This was
- * already the brand's intended display face (paired with Inter + JetBrains
- * Mono in the original Dash dashboard's font stack) but never made it into
- * this Next.js frontend. Loaded with the full `opsz` range so headings at
- * 4rem+ get the true display cut — high-contrast strokes, tighter fit —
- * instead of a body serif scaled up.
+ * Source Serif 4 — the display/heading face. Chosen over a high-contrast
+ * "fashion editorial" serif (the previous Fraunces) because this is a
+ * research product: Source Serif is a contemporary text serif designed for
+ * long-form reading, with moderate stroke contrast and open apertures. It
+ * reads as an academic/publication typeface rather than a magazine one,
+ * which is the intended register. Variable `opsz` so headings still get a
+ * proper display cut instead of body type scaled up.
  */
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
   subsets: ["latin"],
-  axes: ["opsz", "SOFT", "WONK"],
+  axes: ["opsz"],
   display: "swap",
 });
 
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
  */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${fraunces.variable} h-full`} style={{ colorScheme: "light" }}>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${sourceSerif.variable} h-full`} style={{ colorScheme: "light" }}>
       <body className="min-h-full bg-canvas font-sans text-foreground">
         <SessionProvider>
           <TooltipProvider delay={150}>

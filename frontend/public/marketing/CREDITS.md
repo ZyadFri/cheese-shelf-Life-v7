@@ -32,6 +32,13 @@ Files are downloaded and optimised by `scripts/fetch-marketing-images.py`.
 - Downloaded from upload.wikimedia.org and resized/re-compressed for web (1600px wide,
   JPEG quality 82) -- content/composition unchanged.
 
+## cheese-cave.jpg
+- Source: https://commons.wikimedia.org/wiki/File:Cheese_Aging_Cave.jpg
+- Author: Baynard
+- Licence: CC BY-SA 3.0
+- Downloaded from upload.wikimedia.org and resized/re-compressed for web (1000px wide,
+  JPEG quality 80) -- content/composition unchanged.
+
 ## cheeses.jpg
 - Source: https://commons.wikimedia.org/wiki/File:Various_cheeses.jpg
 - Author: Maria from Washington, USA

@@ -34,17 +34,29 @@ export function SiteHeader() {
       className={cn(
         "fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-300",
         scrolled
-          ? "border-b border-border bg-canvas/80 backdrop-blur-md supports-[backdrop-filter]:bg-canvas/70"
-          : "border-b border-transparent bg-transparent",
+          ? "border-b border-border bg-background/85 backdrop-blur-md"
+          : "border-b border-border/60 bg-background/70 backdrop-blur-sm",
       )}
     >
-      <div className="mx-auto flex h-14 w-full max-w-[1180px] items-center gap-6 px-5 sm:px-7">
-        <Link href="/" className="flex shrink-0 items-center gap-2 rounded-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
-          <span className="flex size-6 items-center justify-center rounded-md bg-primary">
-            <FlaskConical className="size-3.5 text-primary-foreground" />
+      <div className="mx-auto flex h-[52px] w-full max-w-[1180px] items-center gap-7 px-5 sm:px-7">
+        {/* Brand lockup. The mark slot is deliberately kept generic: McGill's
+            visual identity guide prohibits third-party use of the crest
+            without written authorization from logo.communications@mcgill.ca,
+            so the affiliation is stated typographically instead. Swap this
+            span for the crest asset once that authorization is in hand. */}
+        <Link
+          href="/"
+          className="flex shrink-0 items-center gap-2.5 rounded-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+        >
+          <span className="flex size-7 items-center justify-center rounded-md bg-primary">
+            <FlaskConical className="size-4 text-primary-foreground" strokeWidth={1.75} />
           </span>
-          <span className="type-title text-foreground">Shelf-Life Studio</span>
-          <span className="hidden type-caption text-subtle-foreground sm:inline">· McGill University</span>
+          <span className="flex flex-col leading-none">
+            <span className="type-label font-semibold tracking-[-0.01em] text-foreground">
+              Shelf-Life Studio
+            </span>
+            <span className="type-caption mt-0.5 text-subtle-foreground">McGill University</span>
+          </span>
         </Link>
 
         <nav className="hidden flex-1 items-center gap-1 md:flex">
@@ -52,7 +64,7 @@ export function SiteHeader() {
             <a
               key={item.href}
               href={item.href}
-              className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="rounded-md px-2.5 py-1.5 text-[0.8125rem] text-muted-foreground transition-colors hover:text-foreground"
             >
               {item.label}
             </a>
@@ -64,7 +76,7 @@ export function SiteHeader() {
               signed-in user then swapping it is worse than a brief gap. */}
           {!loading &&
             (user ? (
-              <Link href="/app" className={buttonVariants({ size: "sm", variant: "contrast" })}>
+              <Link href="/app" className={buttonVariants({ size: "sm" })}>
                 Open workspace
               </Link>
             ) : (
@@ -79,7 +91,7 @@ export function SiteHeader() {
                 >
                   Log in
                 </Link>
-                <Link href="/signup" className={buttonVariants({ size: "sm", variant: "contrast" })}>
+                <Link href="/signup" className={buttonVariants({ size: "sm" })}>
                   Get started
                 </Link>
               </>

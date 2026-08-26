@@ -1,8 +1,9 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Boxes,
+  Beaker,
   GitBranch,
+  Layers,
   LineChart,
   Lock,
   ScrollText,
@@ -15,93 +16,157 @@ import { initialsOf } from "@/lib/utils";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { Reveal, RevealLines } from "@/components/marketing/reveal";
-import { ProductFrame } from "@/components/marketing/product-frame";
 import { EditorialImage } from "@/components/marketing/editorial-image";
 import {
   CategoryErrorPreview,
-  ComparisonPreview,
   ExplainPreview,
-  LeaderboardPreview,
+  HeroProductPreview,
 } from "@/components/marketing/previews";
-import { PipelineScroller } from "@/components/marketing/pipeline-scroller";
 
-// Zahra Allahdad verified against the Karboune Lab's own team page
-// (karboune-group.lab.mcgill.ca/our-team1-1). Loubna Benabbou's title/
-// affiliation/bio supplied directly by the project owner (condensed from
-// her own written bio, nothing added beyond it) -- her verified affiliation
-// is UQAR, not McGill, so she's presented on her own real credentials
-// rather than folded into the McGill Food Science framing above.
-const RESEARCH_CONTRIBUTORS = [
+/**
+ * Research team.
+ *
+ * Dr. Salwa Karboune and Zahra Allahdad are verified against the Karboune
+ * Lab's own official team page (karboune-group.lab.mcgill.ca/our-team1-1).
+ * Loubna Benabbou's title/affiliation/bio were supplied directly by the
+ * project owner and are used as given -- note her affiliation is UQAR, not
+ * McGill, so she is presented on her own real credentials rather than folded
+ * into the McGill Food Science framing.
+ */
+const TEAM = [
+  {
+    name: "Salwa Karboune",
+    credential: "PhD",
+    role: "Faculty lead",
+    affiliation: "Department of Food Science and Agricultural Chemistry, McGill University",
+    bio: "Developed within her research group at Macdonald Campus, supporting ongoing work in food preservation and shelf-life science.",
+    photo: "/marketing/karboune.jpg",
+  },
   {
     name: "Zahra Allahdad",
     credential: "PhD",
-    role: "Research Associate, Karboune Lab (2022–present)",
+    role: "Research Associate",
+    affiliation: "Karboune Lab, McGill University (2022–present)",
     bio: "Focuses on food protein modification, developing functional ingredients that improve food product quality.",
-    photo: "/marketing/allahdad.jpg" as string | undefined,
+    photo: "/marketing/allahdad.jpg",
   },
   {
     name: "Loubna Benabbou",
     credential: "PhD",
-    role: "Research Chair Professor of AI for Supply Chain Management, UQAR",
+    role: "Research Chair Professor",
+    affiliation: "AI for Supply Chain Management, Université du Québec à Rimouski",
     bio: "Applies machine learning and operations research to data-driven decision-making, including supply chain management and climate-risk mitigation.",
-    photo: "/marketing/benabbou.jpg" as string | undefined,
+    photo: "/marketing/benabbou.jpg",
   },
 ];
 
+/** Capabilities the application actually ships today -- each maps to a real
+ *  route in the authenticated workspace. */
 const CAPABILITIES = [
   {
     icon: SlidersHorizontal,
     title: "Predict from formulation",
-    body: "Matrix chemistry, storage, packaging and the spoilage indicator you track. Every prediction carries a 90% conformal interval calibrated on held-out data.",
+    body: "Matrix chemistry, storage, packaging and the spoilage indicator you track, routed to the specialist trained for that cheese category and task.",
   },
   {
     icon: GitBranch,
     title: "Compare against a control",
-    body: "Score candidate treatments beside an untreated control built from the training split's own control rows — ranked by predicted shelf life and relative gain.",
+    body: "Score candidate treatments beside an untreated control built from the training split's own control rows.",
+  },
+  {
+    icon: Layers,
+    title: "Classify efficacy",
+    body: "Predict whether a treated formulation lands in the Low, Medium or High shelf-life-improvement tier, with a real SHAP explanation.",
   },
   {
     icon: LineChart,
-    title: "Four models, one leaderboard",
-    body: "Random Forest, LightGBM, XGBoost and an Explainable Boosting Machine, trained independently and ranked by validation RMSE.",
+    title: "Rank ingredients",
+    body: "Each ingredient's own context-adjusted effect, controlling for the conditions it happened to be tested under.",
   },
   {
     icon: ScrollText,
     title: "Explain any prediction",
-    body: "See which features pushed a prediction up or down. The EBM contributes native additive decompositions; tree models use reference-value perturbation.",
-  },
-  {
-    icon: Boxes,
-    title: "Inspect the dataset",
-    body: "Distributions across cheese products, ingredient families, packaging formats and indicators — plus the provenance rule behind every generated row.",
+    body: "See which features pushed a prediction up or down — native decompositions from the EBM, perturbation for the tree models.",
   },
   {
     icon: Lock,
-    title: "Leakage-safe by construction",
-    body: "Rows group by context_id so a formulation and its control never split across train, validation and test. Identifier columns are excluded from features.",
+    title: "Leakage-safe by design",
+    body: "Rows group by context so a formulation and its control never split across train, validation and test.",
   },
+];
+
+/** The real V7 training sequence (train_specialists.py --data-version v7). */
+const PIPELINE = [
+  {
+    step: "01",
+    title: "Load V7 specialist data",
+    body: "Three corrected category files — soft, semi-hard and hard — covering 34,000 rows of cheese formulations.",
+  },
+  {
+    step: "02",
+    title: "Split by context, not by row",
+    body: "A formulation and its matched control share a context and stay together, so nothing leaks across splits.",
+  },
+  {
+    step: "03",
+    title: "Route to a specialist",
+    body: "Six models: each cheese category × prediction task (general shelf life, safety endpoint) trains independently.",
+  },
+  {
+    step: "04",
+    title: "Train four model families",
+    body: "Random Forest, LightGBM, XGBoost and an Explainable Boosting Machine, fit separately per specialist.",
+  },
+  {
+    step: "05",
+    title: "Select on validation",
+    body: "The deployed model is chosen by validation RMSE. Test metrics are kept for reporting, never for selection.",
+  },
+  {
+    step: "06",
+    title: "Serve from saved artifacts",
+    body: "The API loads trained models once at startup. Nothing is retrained at request time.",
+  },
+];
+
+/** Real, counted directly from the three V7 specialist CSVs and manifests. */
+const STATS = [
+  { value: "34,000", label: "Training rows" },
+  { value: "8,500", label: "Formulation contexts" },
+  { value: "6", label: "Trained specialists" },
+  { value: "70/15/15", label: "Grouped split" },
 ];
 
 export default function LandingPage() {
   return (
-    // The shared <Ambience/> (mounted once in the root layout) supplies the
-    // aurora and grid behind this page; `dark` is global now, so this div is
-    // just the min-height wrapper.
-    <div className="min-h-svh">
+    <div className="min-h-svh bg-background">
       <SiteHeader />
 
-      {/* overflow-x-clip: masks bleed past their sections by design; clip
-          here so none of it can create a page-level horizontal scrollbar. */}
       <main className="flex flex-col overflow-x-clip">
         {/* ── Hero ─────────────────────────────────────────────────────── */}
-        <section className="relative px-5 pt-36 pb-24 sm:px-7 sm:pt-44 sm:pb-32">
-          <div className="relative mx-auto w-full max-w-[1180px]">
-            <div className="mx-auto max-w-[820px] text-center">
+        <section className="relative border-b border-border px-5 pt-28 pb-16 sm:px-7 sm:pt-32 sm:pb-20">
+          {/* Photograph bleeding in from the right edge, behind the preview. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute top-0 right-0 hidden h-full w-[34%] xl:block"
+          >
+            <EditorialImage
+              src="/marketing/cheese-cave.jpg"
+              caption=""
+              className="h-full w-full"
+              imageClassName="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/88 to-background/50" />
+          </div>
+
+          <div className="relative mx-auto grid w-full max-w-[1180px] items-center gap-12 lg:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)] lg:gap-14">
+            <div>
               <Reveal immediate>
                 <Link
                   href="#validation"
-                  className="group inline-flex items-center gap-2 rounded-full border border-border bg-white/[0.03] py-1 pr-2.5 pl-1 backdrop-blur-sm transition-colors hover:border-border-strong"
+                  className="group inline-flex items-center gap-2 rounded-full border border-border py-1 pr-2.5 pl-1 transition-colors hover:border-border-strong"
                 >
-                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[0.6875rem] font-medium text-primary">
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[0.6875rem] font-medium text-primary">
                     New
                   </span>
                   <span className="type-caption text-muted-foreground">
@@ -111,92 +176,65 @@ export default function LandingPage() {
                 </Link>
               </Reveal>
 
-              <h1 className="type-hero text-gradient-fade mt-7">
+              <h1 className="type-hero mt-6 text-foreground">
                 <RevealLines
                   immediate
-                  lines={["Shelf-life modelling,", "with the evidence attached."]}
+                  lines={["Shelf-life modelling,", "with the evidence"]}
                 />
+                <span className="block text-primary italic">attached.</span>
               </h1>
 
               <Reveal immediate delay={0.18}>
-                <p className="type-lede mx-auto mt-6 max-w-[600px] text-muted-foreground">
-                  Model how formulation, packaging and storage change cheese shelf
-                  life — and see exactly where the model holds up and where it
-                  doesn&apos;t.
+                <p className="type-lede mt-5 max-w-[46ch] text-muted-foreground">
+                  Model how formulation, packaging and storage change cheese shelf life —
+                  and see exactly where the model holds up and where it doesn&apos;t.
                 </p>
               </Reveal>
 
-              <Reveal immediate delay={0.26}>
-                <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-                  <Link href="/signup" className={buttonVariants({ size: "xl", variant: "contrast" })}>
+              <Reveal immediate delay={0.24}>
+                <div className="mt-7 flex flex-wrap items-center gap-2.5">
+                  <Link href="/signup" className={buttonVariants({ size: "lg" })}>
                     Get started
                     <ArrowRight className="size-4" />
                   </Link>
-                  <a
-                    href="#platform"
-                    className={buttonVariants({ size: "xl", variant: "outline" })}
-                  >
+                  <a href="#platform" className={buttonVariants({ size: "lg", variant: "outline" })}>
                     See the platform
                   </a>
                 </div>
               </Reveal>
+
+              <Reveal immediate delay={0.3}>
+                <dl className="mt-10 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border pt-6 sm:grid-cols-4">
+                  {STATS.map((stat) => (
+                    <div key={stat.label}>
+                      <dt className="numeral text-[1.375rem] leading-none font-medium tracking-[-0.02em] text-foreground">
+                        {stat.value}
+                      </dt>
+                      <dd className="type-caption mt-1.5 text-subtle-foreground">{stat.label}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </Reveal>
             </div>
 
-            <Reveal immediate delay={0.34} y={30}>
-              <div className="relative mx-auto mt-20 max-w-[1000px]">
-                <ProductFrame
-                  label="Shelf-Life Studio — Results"
-                  className="edge-highlight relative shadow-[0_40px_120px_-20px_rgba(0,0,0,0.7)]"
-                  contentClassName="grid gap-px bg-border sm:grid-cols-2"
-                >
-                  <div className="bg-card">
-                    <ComparisonPreview />
-                  </div>
-                  <div className="bg-card">
-                    <LeaderboardPreview />
-                  </div>
-                </ProductFrame>
-                {/* Fade the frame into the page rather than ending on a hard edge. */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-0 -bottom-px h-32 bg-gradient-to-t from-canvas to-transparent"
-                />
-              </div>
+            <Reveal immediate delay={0.2} y={16}>
+              <HeroProductPreview />
             </Reveal>
           </div>
         </section>
 
-        {/* ── Stats ────────────────────────────────────────────────────── */}
-        <section className="border-y border-border px-5 py-12 sm:px-7">
-          <div className="mx-auto grid w-full max-w-[1180px] grid-cols-2 gap-y-10 sm:grid-cols-4">
-            {[
-              { value: "30,500", label: "Training rows" },
-              { value: "6,100", label: "Formulation contexts" },
-              { value: "4", label: "Trained models" },
-              { value: "70/15/15", label: "Grouped split" },
-            ].map((stat, i) => (
-              <Reveal key={stat.label} delay={i * 0.06} className="text-center">
-                <p className="numeral text-[1.75rem] leading-none font-medium tracking-[-0.03em] text-foreground">
-                  {stat.value}
-                </p>
-                <p className="type-caption mt-2 text-subtle-foreground">{stat.label}</p>
-              </Reveal>
-            ))}
-          </div>
-        </section>
-
-        {/* ── Capabilities ─────────────────────────────────────────────── */}
-        <section id="platform" className="scroll-mt-20 px-5 py-28 sm:px-7 sm:py-36">
-          <div className="mx-auto w-full max-w-[1180px]">
-            <div className="max-w-[640px]">
+        {/* ── Platform ─────────────────────────────────────────────────── */}
+        <section id="platform" className="scroll-mt-16 border-b border-border px-5 py-20 sm:px-7 sm:py-24">
+          <div className="mx-auto grid w-full max-w-[1180px] gap-10 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:gap-16">
+            <div className="lg:sticky lg:top-24 lg:self-start">
               <Reveal>
                 <p className="type-eyebrow text-primary">Platform</p>
               </Reveal>
-              <h2 className="type-section mt-4 text-foreground">
+              <h2 className="type-section mt-3 text-foreground">
                 <RevealLines lines={["Everything the workflow", "actually needs."]} />
               </h2>
-              <Reveal delay={0.12}>
-                <p className="type-lede mt-5 text-muted-foreground">
+              <Reveal delay={0.1}>
+                <p className="type-lede mt-4 max-w-[42ch] text-muted-foreground">
                   Built around how shelf-life studies are really run: a formulation, a
                   control, a spoilage indicator, and a question about whether a treatment
                   meaningfully extends the result.
@@ -204,13 +242,13 @@ export default function LandingPage() {
               </Reveal>
             </div>
 
-            <div className="mt-16 grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
               {CAPABILITIES.map((item, i) => (
-                <Reveal key={item.title} delay={(i % 3) * 0.07} className="bg-card">
-                  <div className="group flex h-full flex-col gap-3.5 p-7 transition-colors hover:bg-elevated">
+                <Reveal key={item.title} delay={(i % 3) * 0.05}>
+                  <div className="border-t border-border pt-4">
                     <item.icon className="size-4 text-primary" strokeWidth={1.75} />
-                    <h3 className="type-title text-foreground">{item.title}</h3>
-                    <p className="type-ui leading-relaxed text-muted-foreground">{item.body}</p>
+                    <h3 className="type-title mt-3 text-foreground">{item.title}</h3>
+                    <p className="type-ui mt-1.5 leading-relaxed text-muted-foreground">{item.body}</p>
                   </div>
                 </Reveal>
               ))}
@@ -219,298 +257,248 @@ export default function LandingPage() {
         </section>
 
         {/* ── Pipeline ─────────────────────────────────────────────────── */}
-        <section
-          id="pipeline"
-          className="relative scroll-mt-20 border-y border-border px-5 py-28 sm:px-7 sm:py-36"
-        >
+        <section id="pipeline" className="scroll-mt-16 border-b border-border px-5 py-20 sm:px-7 sm:py-24">
           <div className="mx-auto w-full max-w-[1180px]">
             <div className="max-w-[640px]">
               <Reveal>
                 <p className="type-eyebrow text-primary">Pipeline</p>
               </Reveal>
-              <h2 className="type-section mt-4 text-foreground">
-                <RevealLines lines={["From workbook", "to served prediction."]} />
+              <h2 className="type-section mt-3 text-foreground">
+                <RevealLines lines={["From raw data", "to served prediction."]} />
               </h2>
-              <Reveal delay={0.12}>
-                <p className="type-lede mt-5 text-muted-foreground">
+              <Reveal delay={0.1}>
+                <p className="type-lede mt-4 max-w-[54ch] text-muted-foreground">
                   Training is a deliberate, inspectable sequence. Nothing is retrained at
                   request time — the API loads saved artifacts once and serves from them.
                 </p>
               </Reveal>
             </div>
 
-            <PipelineScroller />
-          </div>
-        </section>
-
-        {/* ── Photo band: campus + product ────────────────────────────── */}
-        <section className="px-5 py-20 sm:px-7 sm:py-28">
-          <div className="mx-auto grid w-full max-w-[1180px] gap-6 sm:grid-cols-2">
-            <Reveal y={22}>
-              <figure>
-                <EditorialImage
-                  src="/marketing/campus.jpg"
-                  caption="Macdonald Campus"
-                  className="aspect-[4/3] rounded-xl border border-border"
-                />
-                <figcaption className="type-caption mt-3 text-subtle-foreground">
-                  Where the underlying food-science research is conducted.
-                </figcaption>
-              </figure>
-            </Reveal>
-            <Reveal delay={0.08} y={22}>
-              <figure>
-                <EditorialImage
-                  src="/marketing/cheeses.jpg"
-                  caption="A range of cheese varieties"
-                  className="aspect-[4/3] rounded-xl border border-border"
-                />
-                <figcaption className="type-caption mt-3 text-subtle-foreground">
-                  Soft, semi-hard and hard cheeses each carry a different matrix profile.
-                </figcaption>
-              </figure>
-            </Reveal>
+            <div className="mt-12 grid gap-x-8 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+              {PIPELINE.map((s, i) => (
+                <Reveal key={s.step} delay={(i % 3) * 0.05}>
+                  <div className="relative border-t border-border pt-4">
+                    <span
+                      aria-hidden
+                      className="absolute -top-px left-0 h-px w-8 bg-primary"
+                    />
+                    <span className="numeral type-caption font-medium text-primary">{s.step}</span>
+                    <h3 className="type-title mt-2 text-foreground">{s.title}</h3>
+                    <p className="type-ui mt-1.5 leading-relaxed text-muted-foreground">{s.body}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* ── Explainability ───────────────────────────────────────────── */}
-        <section className="px-5 py-28 sm:px-7 sm:py-36">
-          <div className="mx-auto grid w-full max-w-[1180px] items-center gap-14 lg:grid-cols-2 lg:gap-24">
-            <div>
-              <Reveal>
-                <p className="type-eyebrow text-primary">Explainability</p>
-              </Reveal>
-              <h2 className="type-section mt-4 text-foreground">
-                <RevealLines lines={["A number is not", "an answer."]} />
-              </h2>
-              <Reveal delay={0.12}>
-                <p className="type-lede mt-5 text-muted-foreground">
-                  Every prediction decomposes into the features that drove it. The
-                  Explainable Boosting Machine exposes its additive shape functions
-                  directly; tree models substitute each feature with its training reference
-                  value and measure the shift.
-                </p>
-              </Reveal>
-              <Reveal delay={0.18}>
-                <ul className="mt-7 flex flex-col gap-3">
-                  {[
-                    "Global importance, native and permutation-based",
-                    "Local attribution for any single prediction",
-                    "EBM shape functions for the top terms",
-                  ].map((line) => (
-                    <li key={line} className="flex items-start gap-3">
-                      <span className="mt-[7px] size-1 shrink-0 rounded-full bg-primary" />
-                      <span className="type-body text-muted-foreground">{line}</span>
-                    </li>
-                  ))}
-                </ul>
+        <section className="border-b border-border">
+          <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,2.1fr)]">
+            <Reveal y={0} className="relative min-h-[260px] lg:min-h-full">
+              <EditorialImage
+                src="/marketing/microbes.jpg"
+                caption="Bacterial colonies on an agar plate"
+                className="absolute inset-0 h-full w-full"
+                imageClassName="object-cover"
+              />
+            </Reveal>
+
+            <div className="grid gap-10 px-5 py-20 sm:px-7 sm:py-24 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] xl:items-center xl:gap-14">
+              <div>
+                <Reveal>
+                  <p className="type-eyebrow text-primary">Explainability</p>
+                </Reveal>
+                <h2 className="type-section mt-3 text-foreground">
+                  <RevealLines lines={["A number is not", "an answer."]} />
+                </h2>
+                <Reveal delay={0.1}>
+                  <p className="type-lede mt-4 max-w-[44ch] text-muted-foreground">
+                    Every prediction decomposes into the features that drove it. The
+                    Explainable Boosting Machine exposes its additive shape functions
+                    directly; the tree models substitute each feature with its training
+                    reference value and measure the shift.
+                  </p>
+                </Reveal>
+                <Reveal delay={0.16}>
+                  <ul className="mt-5 flex flex-col gap-2">
+                    {[
+                      "Global importance, permutation-based",
+                      "Local attribution for any single prediction",
+                      "EBM shape functions for the top terms",
+                    ].map((line) => (
+                      <li key={line} className="type-ui flex items-start gap-2 text-muted-foreground">
+                        <Beaker className="mt-0.5 size-3.5 shrink-0 text-primary" strokeWidth={1.75} />
+                        {line}
+                      </li>
+                    ))}
+                  </ul>
+                </Reveal>
+              </div>
+
+              <Reveal delay={0.14} y={16}>
+                <div className="rounded-xl border border-border bg-background shadow-[0_16px_40px_-24px_rgba(13,14,16,0.2)]">
+                  <ExplainPreview height={250} />
+                </div>
               </Reveal>
             </div>
-
-            <Reveal delay={0.1} y={24}>
-              <ProductFrame
-                label="Explainability — local attribution"
-                className="edge-highlight shadow-[0_30px_80px_-24px_rgba(0,0,0,0.6)]"
-                contentClassName="bg-card"
-              >
-                <ExplainPreview />
-              </ProductFrame>
-            </Reveal>
           </div>
         </section>
 
-        {/* ── Research context ────────────────────────────────────────── */}
-        <section id="research" className="scroll-mt-20 px-5 py-28 sm:px-7 sm:py-36">
+        {/* ── Research context ─────────────────────────────────────────── */}
+        <section id="research" className="scroll-mt-16 border-b border-border px-5 py-20 sm:px-7 sm:py-24">
           <div className="mx-auto w-full max-w-[1180px]">
-            <div className="max-w-[640px]">
-              <Reveal>
-                <p className="type-eyebrow text-primary">Research context</p>
-              </Reveal>
-              <h2 className="type-section mt-4 text-foreground">
-                <RevealLines lines={["Built inside a", "food-science programme."]} />
-              </h2>
-              <Reveal delay={0.12}>
-                <p className="type-lede mt-5 text-muted-foreground">
-                  The platform supports preservation research — comparing antimicrobial and
-                  antioxidant interventions across cheese matrices under controlled storage,
-                  with provenance tracked for every row that informs a model.
-                </p>
-              </Reveal>
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,2fr)] lg:gap-16">
+              <div>
+                <Reveal>
+                  <p className="type-eyebrow text-primary">Research</p>
+                </Reveal>
+                <h2 className="type-section mt-3 text-foreground">
+                  <RevealLines lines={["Built inside a", "food-science programme."]} />
+                </h2>
+                <Reveal delay={0.1}>
+                  <p className="type-lede mt-4 text-muted-foreground">
+                    The platform supports preservation research — comparing antimicrobial
+                    and antioxidant interventions across cheese matrices under controlled
+                    storage, with provenance tracked for every row that informs a model.
+                  </p>
+                </Reveal>
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-3">
+                {[
+                  {
+                    src: "/marketing/lab.jpg",
+                    caption: "Microbiology laboratory",
+                    text: "Controlled storage trials with tracked provenance.",
+                  },
+                  {
+                    src: "/marketing/cheese-aging.jpg",
+                    caption: "Cheese ripening cellar",
+                    text: "Real matrices across ripening times and conditions.",
+                  },
+                  {
+                    src: "/marketing/campus.jpg",
+                    caption: "Macdonald Campus, McGill University",
+                    text: "Results you can defend in a paper or a review.",
+                  },
+                ].map((fig, i) => (
+                  <Reveal key={fig.src} delay={i * 0.06} y={16}>
+                    <figure>
+                      <EditorialImage
+                        src={fig.src}
+                        caption={fig.caption}
+                        className="aspect-[4/3] rounded-lg border border-border"
+                      />
+                      <figcaption className="type-caption mt-2.5 text-subtle-foreground">
+                        {fig.text}
+                      </figcaption>
+                    </figure>
+                  </Reveal>
+                ))}
+              </div>
             </div>
 
-            <Reveal delay={0.14} y={22}>
-              <figure className="mt-14">
-                <EditorialImage
-                  src="/marketing/research-banner.png"
-                  caption="Macdonald Campus — research life"
-                  className="aspect-[1900/351] w-full rounded-xl border border-border"
-                  priority
-                />
-              </figure>
-            </Reveal>
-
-            <Reveal delay={0.2} y={22}>
-              <div className="edge-highlight surface mt-8 grid overflow-hidden sm:grid-cols-[300px_1fr]">
-                <EditorialImage
-                  src="/marketing/karboune.jpg"
-                  caption="Dr. Salwa Karboune"
-                  className="aspect-[4/3] sm:aspect-auto"
-                />
-                <div className="flex flex-col justify-center p-7 sm:p-9">
-                  <p className="type-eyebrow text-primary">Faculty lead</p>
-                  <h3 className="type-h3 mt-3 text-foreground">Dr. Salwa Karboune</h3>
-                  <p className="type-ui mt-1 text-muted-foreground">
-                    Department of Food Science and Agricultural Chemistry, McGill University
-                  </p>
-                  <p className="type-body mt-4 max-w-[46ch] leading-relaxed text-muted-foreground">
-                    Developed within her research group at Macdonald Campus, supporting ongoing
-                    work in food preservation and shelf-life science.
-                  </p>
-                </div>
-              </div>
-            </Reveal>
-
-            {RESEARCH_CONTRIBUTORS.length > 0 && (
-              <Reveal delay={0.26} y={18}>
-                <div className={RESEARCH_CONTRIBUTORS.length > 1 ? "mt-4 grid gap-4 sm:grid-cols-2" : "mt-4 grid gap-4"}>
-                  {RESEARCH_CONTRIBUTORS.map((person) => (
-                    <div key={person.name} className="surface flex gap-4 p-6">
-                      <Avatar className="size-11 shrink-0 border border-border">
-                        {person.photo && <AvatarImage src={person.photo} alt="" />}
+            {/* Team — three equal editorial panels. */}
+            <div className="mt-14 grid gap-5 lg:grid-cols-3">
+              {TEAM.map((person, i) => (
+                <Reveal key={person.name} delay={i * 0.06} y={16}>
+                  <article className="flex h-full flex-col rounded-xl border border-border p-6">
+                    <div className="flex items-center gap-3.5">
+                      <Avatar className="size-14 shrink-0 border border-border">
+                        <AvatarImage src={person.photo} alt="" />
                         <AvatarFallback className="type-ui">{initialsOf(person.name)}</AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <h4 className="type-title text-foreground">
+                        <p className="type-eyebrow text-primary">{person.role}</p>
+                        <h3 className="type-title mt-1 text-foreground">
                           {person.name}
                           <span className="text-muted-foreground">, {person.credential}</span>
-                        </h4>
-                        <p className="type-caption mt-0.5 text-subtle-foreground">{person.role}</p>
-                        <p className="type-ui mt-2 max-w-[52ch] leading-relaxed text-muted-foreground">{person.bio}</p>
+                        </h3>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </Reveal>
-            )}
-          </div>
-        </section>
-
-        <section className="border-y border-border px-5 py-28 sm:px-7 sm:py-36">
-          <div className="mx-auto grid w-full max-w-[1180px] gap-6 sm:grid-cols-3">
-            <Reveal y={22}>
-              <figure>
-                <EditorialImage
-                  src="/marketing/cheese-aging.jpg"
-                  caption="Cheese ripening cellar"
-                  className="aspect-[4/3] rounded-xl border border-border"
-                />
-                <figcaption className="type-caption mt-3 text-subtle-foreground">
-                  Ripening conditions drive the matrix descriptors the models read.
-                </figcaption>
-              </figure>
-            </Reveal>
-            <Reveal delay={0.06} y={22}>
-              <figure>
-                <EditorialImage
-                  src="/marketing/lab.jpg"
-                  caption="Microbiology laboratory"
-                  className="aspect-[4/3] rounded-xl border border-border"
-                />
-                <figcaption className="type-caption mt-3 text-subtle-foreground">
-                  Spoilage indicators define when shelf life ends.
-                </figcaption>
-              </figure>
-            </Reveal>
-            <Reveal delay={0.12} y={22}>
-              <figure>
-                <EditorialImage
-                  src="/marketing/microbes.jpg"
-                  caption="Bacterial colonies on agar"
-                  className="aspect-[4/3] rounded-xl border border-border"
-                />
-                <figcaption className="type-caption mt-3 text-subtle-foreground">
-                  Microbial growth is what a shelf-life indicator actually tracks.
-                </figcaption>
-              </figure>
-            </Reveal>
+                    <p className="type-caption mt-4 text-subtle-foreground">{person.affiliation}</p>
+                    <p className="type-ui mt-2.5 leading-relaxed text-muted-foreground">{person.bio}</p>
+                  </article>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* ── Validation ───────────────────────────────────────────────── */}
-        <section id="validation" className="scroll-mt-20 px-5 py-28 sm:px-7 sm:py-36">
-          <div className="mx-auto grid w-full max-w-[1180px] items-center gap-14 lg:grid-cols-2 lg:gap-24">
-            <Reveal y={24} className="order-2 lg:order-1">
-              <ProductFrame
-                label="Modeling — error breakdown"
-                className="edge-highlight shadow-[0_30px_80px_-24px_rgba(0,0,0,0.6)]"
-                contentClassName="bg-card"
-              >
-                <CategoryErrorPreview />
-              </ProductFrame>
-            </Reveal>
-
-            <div className="order-1 lg:order-2">
+        <section id="validation" className="scroll-mt-16 border-b border-border px-5 py-20 sm:px-7 sm:py-24">
+          <div className="mx-auto grid w-full max-w-[1180px] gap-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.35fr)_minmax(0,0.8fr)] lg:items-start lg:gap-12">
+            <div>
               <Reveal>
                 <p className="type-eyebrow text-primary">Validation</p>
               </Reveal>
-              <h2 className="type-section mt-4 text-foreground">
+              <h2 className="type-section mt-3 text-foreground">
                 <RevealLines lines={["Designed to show", "where it fails."]} />
               </h2>
-              <Reveal delay={0.12}>
-                <p className="type-lede mt-5 text-muted-foreground">
+              <Reveal delay={0.1}>
+                <p className="type-lede mt-4 text-muted-foreground">
                   A single headline accuracy number hides more than it reveals. Error is
-                  reported by cheese category, food matrix, spoilage indicator and
-                  control-versus-treatment, so a model that performs well overall but
+                  reported by cheese category, so a model that performs well overall but
                   poorly on one category cannot pass unnoticed.
                 </p>
               </Reveal>
-              <Reveal delay={0.18}>
-                <div className="mt-7 rounded-xl border border-border bg-card p-5">
-                  <p className="type-ui leading-relaxed text-muted-foreground">
-                    <span className="font-medium text-foreground">Current status.</span>{" "}
-                    Models train on a synthetic, literature-constrained corpus. External
-                    validation against published studies shows strong agreement for soft
-                    cheeses and substantial over-prediction for hard and semi-hard cheeses.
-                    Those results are reported in the workspace rather than smoothed over.
-                  </p>
+            </div>
+
+            <Reveal delay={0.08} y={16}>
+              <div className="rounded-xl border border-border bg-background">
+                <CategoryErrorPreview height={170} />
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.14} y={16}>
+              <div className="rounded-xl border border-border bg-muted/40 p-5">
+                <p className="type-label font-medium text-foreground">Current status</p>
+                <p className="type-ui mt-2.5 leading-relaxed text-muted-foreground">
+                  Models train on a synthetic, literature-constrained corpus. External
+                  validation against 21 published cases shows close agreement for soft
+                  cheeses and substantial error for hard cheeses. Those results are
+                  reported in the workspace rather than smoothed over.
+                </p>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ── Closing CTA ──────────────────────────────────────────────── */}
+        <section className="grid border-b border-border lg:grid-cols-2">
+          <div className="flex flex-col justify-center px-5 py-20 sm:px-7 sm:py-24">
+            <div className="mx-auto w-full max-w-[520px] lg:mr-0 lg:ml-auto lg:pr-14">
+              <h2 className="type-section text-foreground">
+                <RevealLines lines={["Start modelling in", "your own workspace."]} />
+              </h2>
+              <Reveal delay={0.1}>
+                <p className="type-lede mt-4 text-muted-foreground">
+                  Create an account to run predictions, compare treatments and inspect the
+                  trained models.
+                </p>
+              </Reveal>
+              <Reveal delay={0.16}>
+                <div className="mt-7 flex flex-wrap items-center gap-2.5">
+                  <Link href="/signup" className={buttonVariants({ size: "lg" })}>
+                    Create an account
+                    <ArrowRight className="size-4" />
+                  </Link>
+                  <Link href="/login" className={buttonVariants({ size: "lg", variant: "outline" })}>
+                    Log in
+                  </Link>
                 </div>
               </Reveal>
             </div>
           </div>
-        </section>
 
-        {/* ── Closing ──────────────────────────────────────────────────── */}
-        <section className="relative border-t border-border px-5 py-28 sm:px-7 sm:py-36">
-          <div
-            aria-hidden
-            className="hero-glow pointer-events-none absolute inset-x-0 -bottom-32 h-[380px] opacity-45"
-          />
-          <div className="relative mx-auto w-full max-w-[1180px] text-center">
-            <Reveal>
-              <h2 className="type-section mx-auto max-w-[18ch] text-foreground">
-                Start modelling in your own workspace.
-              </h2>
-            </Reveal>
-            <Reveal delay={0.1}>
-              <p className="type-lede mx-auto mt-5 max-w-[46ch] text-muted-foreground">
-                Create an account to run predictions, compare treatments and inspect the
-                trained models.
-              </p>
-            </Reveal>
-            <Reveal delay={0.16}>
-              <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-                <Link href="/signup" className={buttonVariants({ size: "xl", variant: "contrast" })}>
-                  Create an account
-                  <ArrowRight className="size-4" />
-                </Link>
-                <Link
-                  href="/login"
-                  className={buttonVariants({ size: "xl", variant: "outline" })}
-                >
-                  Log in
-                </Link>
-              </div>
-            </Reveal>
+          <div className="relative min-h-[280px] lg:min-h-[420px]">
+            <EditorialImage
+              src="/marketing/cheeses.jpg"
+              caption="A range of cheese varieties"
+              className="absolute inset-0 h-full w-full"
+              imageClassName="object-cover"
+            />
           </div>
         </section>
       </main>

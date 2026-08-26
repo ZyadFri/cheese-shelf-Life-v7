@@ -7,11 +7,15 @@ export function BarHChart({
   data,
   color = "var(--primary)",
   height = 240,
+  labelWidth = 140,
   colorOf,
 }: {
   data: { label: string; value: number }[];
   color?: string;
   height?: number;
+  /** Width reserved for the category axis. Widen it when labels are long
+   * (e.g. raw feature names) so they aren't cut mid-word. */
+  labelWidth?: number;
   /** Optional per-bar color (e.g. positive/negative attribution, or a
    * category's semantic tone) -- when omitted every bar uses `color`,
    * unchanged from before. */
@@ -25,11 +29,11 @@ export function BarHChart({
         <YAxis
           dataKey="label"
           type="category"
-          width={140}
+          width={labelWidth}
           tick={CHART_CATEGORY_TICK}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(v: string) => truncateTick(v, 20)}
+          tickFormatter={(v: string) => truncateTick(v, Math.floor(labelWidth / 7))}
         />
         <Tooltip contentStyle={CHART_TOOLTIP_STYLE} labelStyle={CHART_TOOLTIP_LABEL_STYLE} />
         <Bar dataKey="value" fill={color} radius={[0, 3, 3, 0]} isAnimationActive animationDuration={500}>
