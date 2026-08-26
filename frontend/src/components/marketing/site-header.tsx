@@ -35,40 +35,48 @@ export function SiteHeader() {
       className={cn(
         "fixed inset-x-0 top-0 z-50 border-b transition-[background-color,border-color,backdrop-filter,box-shadow] duration-300",
         scrolled
-          ? "border-border bg-background/94 shadow-[0_8px_28px_-24px_rgba(13,14,16,0.35)] backdrop-blur-xl"
-          : "border-transparent bg-background/84 backdrop-blur-md",
+          ? "border-border bg-background/96 shadow-[0_9px_28px_-24px_rgba(13,14,16,0.28)] backdrop-blur-xl"
+          : "border-transparent bg-background/92 backdrop-blur-md",
       )}
     >
-      <div className="mx-auto flex h-[58px] w-full max-w-[1180px] items-center gap-7 px-5 sm:px-7">
+      <div className="mx-auto flex h-[66px] w-full max-w-[1180px] items-center px-5 sm:px-7">
         <Link
           href="/"
-          className="group flex shrink-0 items-center gap-2.5 rounded-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+          className="group flex shrink-0 items-center gap-3 rounded-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
         >
           <img
             src={MCGILL_LOGO}
             alt="McGill University"
-            className="h-[25px] w-auto shrink-0 object-contain"
+            className="h-[30px] w-auto shrink-0 object-contain"
           />
-          <span className="h-5 w-px bg-border" aria-hidden />
-          <span className="text-[0.8125rem] font-semibold tracking-[-0.02em] text-foreground transition-colors group-hover:text-primary">
+          <span className="h-7 w-px bg-border-strong" aria-hidden />
+          <span className="text-[0.9rem] font-semibold tracking-[-0.022em] text-foreground transition-colors group-hover:text-primary">
             Shelf-Life Studio
           </span>
         </Link>
 
-        <nav className="hidden flex-1 items-center gap-0.5 md:flex">
-          {NAV.map((item) => (
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 md:flex">
+          {NAV.map((item, index) => (
             <a
               key={item.href}
               href={item.href}
-              className="group/nav relative rounded-md px-2.5 py-2 text-[0.775rem] font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className={cn(
+                "group/nav relative px-1 py-6 text-[0.74rem] font-medium transition-colors",
+                index === 0 ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
             >
               {item.label}
-              <span className="absolute inset-x-2.5 bottom-1 h-px origin-left scale-x-0 bg-primary transition-transform duration-300 group-hover/nav:scale-x-100" />
+              <span
+                className={cn(
+                  "absolute inset-x-0 bottom-[16px] h-[2px] origin-left bg-primary transition-transform duration-300",
+                  index === 0 ? "scale-x-100" : "scale-x-0 group-hover/nav:scale-x-100",
+                )}
+              />
             </a>
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-1.5 md:ml-0">
+        <div className="ml-auto flex items-center gap-2.5">
           {!loading &&
             (user ? (
               <Link href="/app" className={buttonVariants({ size: "sm" })}>
@@ -79,9 +87,10 @@ export function SiteHeader() {
                 <Link
                   href="/login"
                   className={buttonVariants({
-                    variant: "ghost",
+                    variant: "outline",
                     size: "sm",
-                    className: "hidden sm:inline-flex",
+                    className:
+                      "hidden min-w-[72px] bg-white sm:inline-flex transition-transform duration-200 hover:-translate-y-0.5",
                   })}
                 >
                   Log in
@@ -91,10 +100,11 @@ export function SiteHeader() {
                   className={buttonVariants({
                     size: "sm",
                     className:
-                      "transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-18px_rgba(122,27,46,0.75)] active:translate-y-0",
+                      "min-w-[104px] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-18px_rgba(122,27,46,0.75)] active:translate-y-0",
                   })}
                 >
                   Get started
+                  <span aria-hidden>→</span>
                 </Link>
               </>
             ))}
@@ -113,7 +123,7 @@ export function SiteHeader() {
       </div>
 
       {menuOpen && (
-        <div className="border-t border-border bg-background/96 px-5 py-3 backdrop-blur-xl md:hidden">
+        <div className="border-t border-border bg-background/98 px-5 py-3 backdrop-blur-xl md:hidden">
           <nav className="flex flex-col">
             {NAV.map((item) => (
               <a
