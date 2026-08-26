@@ -45,17 +45,13 @@ export function Ambience() {
   // not just at a glance.
   const yA = useTransform(progress, [0, 1], ["0%", "-58%"]);
   const xA = useTransform(progress, [0, 1], ["0%", "10%"]);
-  const yB = useTransform(progress, [0, 1], ["0%", "46%"]);
-  const xB = useTransform(progress, [0, 1], ["0%", "-22%"]);
   const yC = useTransform(progress, [0, 1], ["0%", "-30%"]);
   const xC = useTransform(progress, [0, 1], ["0%", "16%"]);
-  const yD = useTransform(progress, [0, 1], ["-10%", "38%"]);
   const yE = useTransform(progress, [0, 1], ["12%", "-40%"]);
 
-  // Arrival — D and E start invisible and fade in as you scroll into the
-  // platform and research sections respectively, so the palette genuinely
-  // gains new colour further down the page instead of only re-arranging.
-  const opacityD = useTransform(progress, [0.16, 0.34], [0, 1]);
+  // Arrival — E starts invisible and fades in as you scroll into the
+  // research section, so the composition still gains something further down
+  // the page instead of only re-arranging the same two fields.
   const opacityE = useTransform(progress, [0.48, 0.68], [0, 1]);
 
   // Conic sheen rotates continuously with scroll — slow enough to be nearly
@@ -106,14 +102,18 @@ export function Ambience() {
           className="size-full"
           style={{
             background:
-              "conic-gradient(from 0deg, color-mix(in srgb, var(--primary) 70%, transparent), transparent 18%, color-mix(in srgb, #6E5BFF 65%, transparent) 40%, transparent 55%, color-mix(in srgb, #1FD8B0 65%, transparent) 72%, transparent 90%, color-mix(in srgb, var(--primary) 70%, transparent) 100%)",
+              "conic-gradient(from 0deg, color-mix(in srgb, #3E6FA8 45%, transparent), transparent 35%, color-mix(in srgb, #3E6FA8 45%, transparent) 65%, transparent 100%)",
           }}
         />
       </motion.div>
 
-      {/* Aurora — plain alpha blending over white. Vivid enough to read
-          unmistakably as colour, not just a hint of tint. Three fields
-          anchor the hero; two more arrive further down the page. */}
+      {/* Aurora — kept deliberately simple and neutral: a single cool colour
+          family (no burgundy here at all). A heavily-diluted burgundy wash
+          on white desaturates straight to pink, which read as childish/off-
+          brand -- burgundy stays the solid UI accent everywhere else
+          (buttons, badges, the logo mark) but is not used as a diffuse
+          background wash. Two fields anchor the hero; one more arrives
+          further down the page. */}
       <div className="absolute inset-0">
         {/* Position (x/y) comes from scroll-linked motion values via `style`;
             the gentle breathing scale comes from Framer's own `animate` loop
@@ -124,42 +124,26 @@ export function Ambience() {
           style={{ y: yA, x: xA }}
           animate={{ scale: [1, 1.14, 0.96, 1.05, 1] }}
           transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-[26%] -left-[12%] size-[68rem] opacity-[0.4] blur-[100px] will-change-transform
-                     bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary)_92%,transparent),transparent_70%)]
+          className="absolute -top-[26%] -left-[12%] size-[68rem] opacity-[0.16] blur-[115px] will-change-transform
+                     bg-[radial-gradient(circle,color-mix(in_srgb,#3E6FA8_88%,transparent),transparent_70%)]
                      motion-safe:animate-[blob-morph-a_22s_ease-in-out_infinite]"
-        />
-        <motion.div
-          style={{ y: yB, x: xB }}
-          animate={{ scale: [1.08, 0.92, 1.1, 0.98, 1.08] }}
-          transition={{ duration: 32, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[0%] -right-[14%] size-[60rem] opacity-[0.32] blur-[105px] will-change-transform
-                     bg-[radial-gradient(circle,color-mix(in_srgb,#6E5BFF_90%,transparent),transparent_70%)]
-                     motion-safe:animate-[blob-morph-b_27s_ease-in-out_infinite]"
         />
         <motion.div
           style={{ y: yC, x: xC }}
           animate={{ scale: [0.94, 1.12, 0.98, 1.06, 0.94] }}
           transition={{ duration: 38, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -bottom-[22%] left-[14%] size-[56rem] opacity-[0.3] blur-[110px] will-change-transform
-                     bg-[radial-gradient(circle,color-mix(in_srgb,#1FD8B0_85%,transparent),transparent_70%)]
+          className="absolute -bottom-[22%] left-[14%] size-[56rem] opacity-[0.18] blur-[115px] will-change-transform
+                     bg-[radial-gradient(circle,color-mix(in_srgb,#3E6FA8_85%,transparent),transparent_70%)]
                      motion-safe:animate-[blob-morph-c_31s_ease-in-out_infinite]"
         />
-        {/* Arrives around the platform section — warm gold accent. */}
-        <motion.div
-          style={{ y: yD, opacity: opacityD }}
-          animate={{ scale: [1, 1.1, 0.95, 1] }}
-          transition={{ duration: 28, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[62%] -right-[8%] size-[48rem] blur-[95px] will-change-transform
-                     bg-[radial-gradient(circle,color-mix(in_srgb,#D9A441_88%,transparent),transparent_70%)]
-                     motion-safe:animate-[blob-morph-b_24s_ease-in-out_infinite]"
-        />
-        {/* Arrives around the research section — deep institutional blue. */}
+        {/* Arrives around the research section — same institutional blue,
+            further down the page so the composition still shifts on scroll. */}
         <motion.div
           style={{ y: yE, opacity: opacityE }}
           animate={{ scale: [1.05, 0.92, 1.08, 1.05] }}
           transition={{ duration: 34, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[120%] -left-[10%] size-[52rem] blur-[100px] will-change-transform
-                     bg-[radial-gradient(circle,color-mix(in_srgb,#3E6FA8_88%,transparent),transparent_70%)]
+          className="absolute top-[120%] -left-[10%] size-[52rem] blur-[100px] opacity-[0.16] will-change-transform
+                     bg-[radial-gradient(circle,color-mix(in_srgb,#3E6FA8_85%,transparent),transparent_70%)]
                      motion-safe:animate-[blob-morph-c_29s_ease-in-out_infinite]"
         />
       </div>
@@ -198,7 +182,7 @@ function SpotlightPaint({
   React.useEffect(() => {
     const update = () => {
       if (ref.current) {
-        ref.current.style.background = `radial-gradient(620px circle at ${x.get()} ${y.get()}, color-mix(in srgb, var(--primary) 85%, transparent), transparent 62%)`;
+        ref.current.style.background = `radial-gradient(620px circle at ${x.get()} ${y.get()}, color-mix(in srgb, #3E6FA8 85%, transparent), transparent 62%)`;
       }
     };
     update();
@@ -219,4 +203,4 @@ const GRAIN =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
 
 const AURORA_STATIC =
-  "radial-gradient(circle at 15% 15%, color-mix(in srgb, var(--primary) 48%, transparent), transparent 58%), radial-gradient(circle at 85% 25%, color-mix(in srgb, #6E5BFF 40%, transparent), transparent 58%), radial-gradient(circle at 35% 85%, color-mix(in srgb, #1FD8B0 34%, transparent), transparent 58%), radial-gradient(circle at 90% 75%, color-mix(in srgb, #D9A441 30%, transparent), transparent 58%)";
+  "radial-gradient(circle at 15% 15%, color-mix(in srgb, #3E6FA8 22%, transparent), transparent 58%), radial-gradient(circle at 85% 80%, color-mix(in srgb, #3E6FA8 20%, transparent), transparent 58%)";

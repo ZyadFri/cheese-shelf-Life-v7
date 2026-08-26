@@ -25,18 +25,26 @@ import {
 } from "@/components/marketing/previews";
 import { PipelineScroller } from "@/components/marketing/pipeline-scroller";
 
-// Verified against the Karboune Lab's own team page
-// (karboune-group.lab.mcgill.ca/our-team1-1) -- nothing here is invented.
-// A photo can be added per person once supplied (see AvatarImage below);
-// until then each falls back to initials, never a placeholder graphic.
-// TODO: add Loubna Bennabou here once her bio is verified/supplied.
+// Zahra Allahdad verified against the Karboune Lab's own team page
+// (karboune-group.lab.mcgill.ca/our-team1-1). Loubna Benabbou's title/
+// affiliation/bio supplied directly by the project owner (condensed from
+// her own written bio, nothing added beyond it) -- her verified affiliation
+// is UQAR, not McGill, so she's presented on her own real credentials
+// rather than folded into the McGill Food Science framing above.
 const RESEARCH_CONTRIBUTORS = [
   {
     name: "Zahra Allahdad",
     credential: "PhD",
     role: "Research Associate, Karboune Lab (2022–present)",
     bio: "Focuses on food protein modification, developing functional ingredients that improve food product quality.",
-    photo: undefined as string | undefined,
+    photo: "/marketing/allahdad.jpg" as string | undefined,
+  },
+  {
+    name: "Loubna Benabbou",
+    credential: "PhD",
+    role: "Research Chair Professor of AI for Supply Chain Management, UQAR",
+    bio: "Applies machine learning and operations research to data-driven decision-making, including supply chain management and climate-risk mitigation.",
+    photo: "/marketing/benabbou.jpg" as string | undefined,
   },
 ];
 
@@ -235,6 +243,36 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── Photo band: campus + product ────────────────────────────── */}
+        <section className="px-5 py-20 sm:px-7 sm:py-28">
+          <div className="mx-auto grid w-full max-w-[1180px] gap-6 sm:grid-cols-2">
+            <Reveal y={22}>
+              <figure>
+                <EditorialImage
+                  src="/marketing/campus.jpg"
+                  caption="Macdonald Campus"
+                  className="aspect-[4/3] rounded-xl border border-border"
+                />
+                <figcaption className="type-caption mt-3 text-subtle-foreground">
+                  Where the underlying food-science research is conducted.
+                </figcaption>
+              </figure>
+            </Reveal>
+            <Reveal delay={0.08} y={22}>
+              <figure>
+                <EditorialImage
+                  src="/marketing/cheeses.jpg"
+                  caption="A range of cheese varieties"
+                  className="aspect-[4/3] rounded-xl border border-border"
+                />
+                <figcaption className="type-caption mt-3 text-subtle-foreground">
+                  Soft, semi-hard and hard cheeses each carry a different matrix profile.
+                </figcaption>
+              </figure>
+            </Reveal>
+          </div>
+        </section>
+
         {/* ── Explainability ───────────────────────────────────────────── */}
         <section className="px-5 py-28 sm:px-7 sm:py-36">
           <div className="mx-auto grid w-full max-w-[1180px] items-center gap-14 lg:grid-cols-2 lg:gap-24">
@@ -358,7 +396,7 @@ export default function LandingPage() {
         </section>
 
         <section className="border-y border-border px-5 py-28 sm:px-7 sm:py-36">
-          <div className="mx-auto grid w-full max-w-[1180px] gap-6 sm:grid-cols-2">
+          <div className="mx-auto grid w-full max-w-[1180px] gap-6 sm:grid-cols-3">
             <Reveal y={22}>
               <figure>
                 <EditorialImage
@@ -371,7 +409,7 @@ export default function LandingPage() {
                 </figcaption>
               </figure>
             </Reveal>
-            <Reveal delay={0.08} y={22}>
+            <Reveal delay={0.06} y={22}>
               <figure>
                 <EditorialImage
                   src="/marketing/lab.jpg"
@@ -380,6 +418,18 @@ export default function LandingPage() {
                 />
                 <figcaption className="type-caption mt-3 text-subtle-foreground">
                   Spoilage indicators define when shelf life ends.
+                </figcaption>
+              </figure>
+            </Reveal>
+            <Reveal delay={0.12} y={22}>
+              <figure>
+                <EditorialImage
+                  src="/marketing/microbes.jpg"
+                  caption="Bacterial colonies on agar"
+                  className="aspect-[4/3] rounded-xl border border-border"
+                />
+                <figcaption className="type-caption mt-3 text-subtle-foreground">
+                  Microbial growth is what a shelf-life indicator actually tracks.
                 </figcaption>
               </figure>
             </Reveal>

@@ -44,6 +44,7 @@ export function SiteHeader() {
             <FlaskConical className="size-3.5 text-primary-foreground" />
           </span>
           <span className="type-title text-foreground">Shelf-Life Studio</span>
+          <span className="hidden type-caption text-subtle-foreground sm:inline">· McGill University</span>
         </Link>
 
         <nav className="hidden flex-1 items-center gap-1 md:flex">

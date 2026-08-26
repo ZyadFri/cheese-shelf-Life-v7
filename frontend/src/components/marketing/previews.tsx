@@ -3,7 +3,7 @@
 import { ArrowUpRight, Check } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { BarHChart } from "@/components/charts/bar-h-chart";
 
 /**
  * Static reconstructions of real screens, used only inside the landing page.
@@ -70,32 +70,17 @@ const CANDIDATES = [
 ];
 
 export function ComparisonPreview() {
-  const max = 40;
+  const data = [
+    { label: "Control", value: 22.4 },
+    ...CANDIDATES.map((c) => ({ label: c.name, value: c.days })),
+  ];
   return (
     <div className="p-4">
       <div className="mb-3 flex items-baseline justify-between">
         <p className="type-title text-foreground">Treatment vs. control</p>
-        <p className="type-caption text-subtle-foreground">Control · 22.4 d</p>
+        <p className="type-caption text-subtle-foreground">Predicted shelf life, days</p>
       </div>
-      <div className="flex flex-col gap-2.5">
-        {CANDIDATES.map((c) => (
-          <div key={c.name} className="flex flex-col gap-1">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="truncate text-[0.8125rem] text-foreground">{c.name}</span>
-              <span className="shrink-0 text-[0.8125rem] numeral text-foreground">
-                {c.days.toFixed(1)} d
-                <span className="ml-1.5 text-[0.6875rem] text-success">+{c.pct.toFixed(0)}%</span>
-              </span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{ width: `${(c.days / max) * 100}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+      <BarHChart data={data} height={168} />
       <div className="mt-3 flex items-center gap-1.5 border-t border-border pt-2.5">
         <Check className="size-3 text-success" />
         <span className="type-caption text-muted-foreground">
@@ -115,44 +100,14 @@ const FACTORS = [
 ];
 
 export function ExplainPreview() {
-  const max = Math.max(...FACTORS.map((f) => Math.abs(f.value)));
+  const data = FACTORS.map((f) => ({ label: f.feature, value: f.value }));
   return (
     <div className="p-4">
       <div className="mb-3 flex items-baseline justify-between">
         <p className="type-title text-foreground">Prediction factors</p>
-        <p className="type-caption text-subtle-foreground">Local attribution</p>
+        <p className="type-caption text-subtle-foreground">Local attribution, days</p>
       </div>
-      <div className="flex flex-col gap-2">
-        {FACTORS.map((f) => {
-          const pct = (Math.abs(f.value) / max) * 50;
-          const negative = f.value < 0;
-          return (
-            <div key={f.feature} className="flex items-center gap-2">
-              <span className="w-[40%] shrink-0 truncate type-mono text-[0.6875rem] text-muted-foreground">
-                {f.feature}
-              </span>
-              <div className="relative h-4 flex-1">
-                <span className="absolute inset-y-0 left-1/2 w-px bg-border" />
-                <span
-                  className={cn(
-                    "absolute inset-y-[3px] rounded-[2px]",
-                    negative ? "bg-destructive/70" : "bg-success/70",
-                  )}
-                  style={
-                    negative
-                      ? { right: "50%", width: `${pct}%` }
-                      : { left: "50%", width: `${pct}%` }
-                  }
-                />
-              </div>
-              <span className="w-12 shrink-0 text-right text-[0.6875rem] numeral text-muted-foreground">
-                {f.value > 0 ? "+" : ""}
-                {f.value.toFixed(1)}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      <BarHChart data={data} height={172} colorOf={(v) => (v < 0 ? "var(--destructive)" : "var(--success)")} />
     </div>
   );
 }
@@ -163,25 +118,30 @@ const CATEGORY_ERROR = [
   { category: "hard", mae: 207.1, n: 2, tone: "destructive" as const },
 ];
 
+const CATEGORY_ERROR_TONE_COLOR: Record<string, string> = {
+  success: "var(--success)",
+  warning: "var(--warning)",
+  destructive: "var(--destructive)",
+};
+
 export function CategoryErrorPreview() {
+  const data = CATEGORY_ERROR.map((row) => ({ label: `${row.category} (n=${row.n})`, value: row.mae, tone: row.tone }));
   return (
     <div className="p-4">
       <div className="mb-3 flex items-baseline justify-between">
         <p className="type-title text-foreground">Error by cheese category</p>
-        <p className="type-caption text-subtle-foreground">External literature set</p>
+        <p className="type-caption text-subtle-foreground">MAE, days · external literature set</p>
       </div>
-      <div className="flex flex-col gap-2">
+      <BarHChart
+        data={data}
+        height={130}
+        colorOf={(_, i) => CATEGORY_ERROR_TONE_COLOR[data[i].tone]}
+      />
+      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
         {CATEGORY_ERROR.map((row) => (
-          <div
-            key={row.category}
-            className="flex items-center justify-between rounded-md border border-border px-2.5 py-2"
-          >
-            <div className="flex items-center gap-2">
-              <span className="type-mono text-[0.75rem] text-foreground">{row.category}</span>
-              <span className="type-caption text-subtle-foreground">n={row.n}</span>
-            </div>
-            <Badge variant={row.tone}>MAE {row.mae.toFixed(1)} d</Badge>
-          </div>
+          <Badge key={row.category} variant={row.tone} className="text-[0.6875rem]">
+            {row.category}: {row.mae.toFixed(1)} d
+          </Badge>
         ))}
       </div>
       <p className="type-caption mt-3 flex items-start gap-1.5 border-t border-border pt-2.5 text-muted-foreground">
