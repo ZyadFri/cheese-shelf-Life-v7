@@ -216,7 +216,7 @@
   letter-spacing: -.058em;
   text-wrap: balance;
 }
-.platformTitle { max-width: 9.7ch; }
+.platformTitle { max-width: 13ch; }
 .platformCopy,
 .pipelineCopy {
   margin: 1.35rem 0 0;
@@ -500,7 +500,7 @@
   min-height: 31rem;
   padding-bottom: 10.8rem;
 }
-.pipelineTitle { max-width: 8.6ch; }
+.pipelineTitle { max-width: 12ch; }
 .pipelineCopy { max-width: 25ch; }
 .pipelineLink {
   display: inline-flex;
@@ -1179,7 +1179,7 @@
   .heroGrid { gap: 2.2rem; }
   .heroTitle { max-width: 12ch; }
   .platformIntro { max-width: 34rem; }
-  .platformTitle { max-width: 11ch; }
+  .platformTitle { max-width: 13ch; }
   .capabilityStage { min-height: 36rem; margin-top: 1rem; }
   .pipelineIntro { min-height: 0; padding-bottom: 0; }
   .pipelineBenchPhoto { display: none; }
