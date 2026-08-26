@@ -1,13 +1,11 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Beaker,
-  GitBranch,
-  Layers,
-  LineChart,
-  Lock,
-  ScrollText,
-  SlidersHorizontal,
+  BookOpen,
+  Boxes,
+  Check,
+  Database,
+  Users,
 } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -20,10 +18,7 @@ import {
   ExplainPreview,
   HeroProductPreview,
 } from "@/components/marketing/previews";
-import {
-  LandingProgress,
-  TiltCard,
-} from "@/components/marketing/landing-interactions";
+import { TiltCard } from "@/components/marketing/landing-interactions";
 import styles from "./landing.module.css";
 
 const TEAM = [
@@ -31,57 +26,50 @@ const TEAM = [
     name: "Salwa Karboune",
     credential: "PhD",
     role: "Faculty lead",
-    affiliation:
-      "Dean, Faculty of Agricultural and Environmental Sciences · Associate Vice-President, Macdonald Campus · McGill University",
-    bio: "Professor in Food Science and Agricultural Chemistry whose research program spans functional food ingredients, biocatalysis and food product innovation.",
+    affiliation: "McGill University · Food Science",
+    bio: "Food-science supervision and research direction for the platform.",
     photo: "/marketing/karboune.jpg",
   },
   {
     name: "Zahra Allahdad",
     credential: "PhD",
     role: "Research Associate",
-    affiliation: "Karboune Lab · McGill University · 2022–present",
-    bio: "Researches food protein modification and functional ingredients that improve food quality and sustainability.",
+    affiliation: "Karboune Lab · McGill University",
+    bio: "Validated food-science constraints, helped decide which attributes to include or remove, and ensured domain realism.",
     photo: "/marketing/allahdad.jpg",
   },
   {
     name: "Loubna Benabbou",
     credential: "PhD",
     role: "Research Chair Professor",
-    affiliation: "Université du Québec à Rimouski · Campus de Lévis",
-    bio: "Works across machine learning, decision science and resilient digital supply chains.",
+    affiliation: "Université du Québec à Rimouski",
+    bio: "Guided model selection, helped choose the most relevant plots, and contributed to the machine-learning strategy.",
     photo: "/marketing/benabbou.jpg",
   },
 ];
 
 const CAPABILITIES = [
   {
-    icon: SlidersHorizontal,
     title: "Predict from formulation",
-    body: "Matrix chemistry, storage, packaging and indicator context routed to the right specialist.",
+    body: "Matrix chemistry, storage, packaging and context routed to the right specialist.",
   },
   {
-    icon: GitBranch,
     title: "Compare against a control",
     body: "Score candidate treatments beside an untreated control and quantify relative gain.",
   },
   {
-    icon: Layers,
     title: "Classify efficacy",
-    body: "Low, Medium and High shelf-life-improvement tiers with a real explanation.",
+    body: "Low, Medium and High shelf-life-improvement tiers with explanation.",
   },
   {
-    icon: LineChart,
     title: "Rank ingredients",
     body: "Context-adjusted ingredient effects with data-support visibility.",
   },
   {
-    icon: ScrollText,
     title: "Explain any prediction",
     body: "See which features pushed a result up or down, not just the final number.",
   },
   {
-    icon: Lock,
     title: "Leakage-safe by design",
     body: "Grouped context splitting keeps matched formulations together across partitions.",
   },
@@ -101,12 +89,12 @@ const PIPELINE = [
   {
     step: "03",
     title: "Route specialist",
-    body: "Cheese category × endpoint model routing.",
+    body: "Category × endpoint model routing.",
   },
   {
     step: "04",
     title: "Train families",
-    body: "Random Forest, LightGBM, XGBoost and EBM.",
+    body: "RF, LightGBM, XGBoost and EBM.",
   },
   {
     step: "05",
@@ -116,10 +104,30 @@ const PIPELINE = [
 ];
 
 const STATS = [
-  { value: "34,000", label: "Training rows" },
-  { value: "8,500", label: "Formulation contexts" },
-  { value: "6", label: "Trained specialists" },
-  { value: "70/15/15", label: "Grouped split" },
+  {
+    value: "34k",
+    label: "Rows",
+    sublabel: "Curated & validated",
+    icon: Database,
+  },
+  {
+    value: "8.5k",
+    label: "Formulation contexts",
+    sublabel: "Modeled",
+    icon: Boxes,
+  },
+  {
+    value: "21",
+    label: "Published cases",
+    sublabel: "Integrated",
+    icon: BookOpen,
+  },
+  {
+    value: "6",
+    label: "Specialist models",
+    sublabel: "Routed by context",
+    icon: Users,
+  },
 ];
 
 const RESEARCH_IMAGES = [
@@ -128,251 +136,295 @@ const RESEARCH_IMAGES = [
   { src: "/marketing/cheese-aging.jpg", label: "Real cheese matrices" },
 ];
 
+function WorkflowMap() {
+  return (
+    <div className={styles.workflowMap}>
+      <svg
+        aria-hidden
+        viewBox="0 0 800 360"
+        preserveAspectRatio="none"
+        className={styles.workflowLines}
+      >
+        <path d="M18 55 H95 Q125 55 125 85 V145 Q125 175 155 175 H260" />
+        <path d="M270 55 H330 Q360 55 360 85 V145" />
+        <path d="M530 55 H650 Q680 55 680 85 V145 Q680 175 650 175 H555" />
+        <path d="M95 305 H165 Q195 305 195 275 V220 Q195 190 225 190 H300" />
+        <path d="M705 305 H640 Q610 305 610 275 V220 Q610 190 580 190 H500" />
+      </svg>
+
+      {CAPABILITIES.map((item, index) => (
+        <Reveal key={item.title} delay={(index % 3) * 0.045} y={10}>
+          <article className={`${styles.workflowNode} ${styles[`node${index + 1}`]}`}>
+            <span className={styles.nodeNumber}>{index + 1}</span>
+            <h3>{item.title}</h3>
+            <p>{item.body}</p>
+          </article>
+        </Reveal>
+      ))}
+
+      <div className={styles.workflowCenter}>
+        <span className={styles.workflowCenterMark}>M</span>
+        Shelf-Life Studio
+      </div>
+    </div>
+  );
+}
+
+function MoleculeArt() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 190 190"
+      className={styles.moleculeArt}
+    >
+      <g fill="none" stroke="currentColor" strokeWidth="1.4">
+        <path d="M38 102 72 76 110 91 139 55" />
+        <path d="M72 76 63 38" />
+        <path d="M110 91 139 126 163 104" />
+        <path d="M139 126 126 162" />
+        <path d="M38 102 25 140" />
+      </g>
+      {[
+        [38, 102],
+        [72, 76],
+        [110, 91],
+        [139, 55],
+        [63, 38],
+        [139, 126],
+        [163, 104],
+        [126, 162],
+        [25, 140],
+      ].map(([cx, cy]) => (
+        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="6" fill="currentColor" />
+      ))}
+    </svg>
+  );
+}
+
 export default function LandingPage() {
   return (
     <div className="min-h-svh bg-background">
-      <LandingProgress />
       <SiteHeader />
 
-      <main className="overflow-x-clip">
+      <main className={styles.page}>
         <section className={styles.hero}>
           <div className={`${styles.container} ${styles.heroGrid}`}>
-            <div className="relative z-10">
+            <div className={styles.heroCopy}>
               <Reveal immediate>
-                <a href="#validation" className={styles.eyebrow}>
-                  <span className={styles.newPill}>New</span>
-                  External literature validation
-                  <ArrowRight className="size-3" />
-                </a>
+                <p className={styles.eyebrow}>Predict. Understand. Extend.</p>
               </Reveal>
 
               <h1 className={styles.heroTitle}>
                 <RevealLines
                   immediate
-                  lines={["Shelf-life modelling,", "with the evidence"]}
+                  lines={["Shelf-life modelling", "with evidence."]}
                 />
-                <Reveal immediate delay={0.16}>
-                  <span className={styles.heroAccent}>attached.</span>
-                </Reveal>
               </h1>
 
-              <Reveal immediate delay={0.22}>
-                <p className={styles.lede}>
-                  Model how formulation, packaging and storage change cheese shelf life —
-                  and see exactly where the model holds up and where it doesn&apos;t.
+              <Reveal immediate delay={0.16}>
+                <p className={styles.heroLede}>
+                  Shelf-Life Studio predicts and explains how food behaves over time.
+                  Powered by food-science research and built for transparency.
                 </p>
               </Reveal>
 
-              <Reveal immediate delay={0.28}>
+              <Reveal immediate delay={0.22}>
                 <div className={styles.actions}>
                   <Link
                     href="/signup"
                     className={`${buttonVariants({ size: "lg" })} ${styles.primaryAction}`}
                   >
-                    Get started
+                    Create an account
                     <ArrowRight className="size-4" />
                   </Link>
                   <a
                     href="#platform"
                     className={`${buttonVariants({ size: "lg", variant: "outline" })} ${styles.secondaryAction}`}
                   >
-                    See the platform
+                    Explore the platform
                   </a>
                 </div>
               </Reveal>
-
-              <Reveal immediate delay={0.34}>
-                <dl className={styles.stats}>
-                  {STATS.map((stat) => (
-                    <div key={stat.label} className={styles.stat}>
-                      <dt className={styles.statValue}>{stat.value}</dt>
-                      <dd className={styles.statLabel}>{stat.label}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </Reveal>
             </div>
 
-            <div className={styles.heroVisual}>
-              <Reveal immediate delay={0.1} y={10}>
-                <div className={styles.heroPhoto}>
-                  <EditorialImage
-                    src="/marketing/cheeses.jpg"
-                    caption="Cheese varieties"
-                    className="h-full w-full"
-                    priority
-                  />
-                </div>
-              </Reveal>
-
-              <Reveal immediate delay={0.23} y={18}>
-                <TiltCard className={styles.productWrap}>
-                  <HeroProductPreview />
-                </TiltCard>
-              </Reveal>
-            </div>
+            <Reveal immediate delay={0.12} y={14}>
+              <TiltCard className={styles.heroProduct}>
+                <HeroProductPreview />
+              </TiltCard>
+            </Reveal>
           </div>
+
+          <Reveal immediate delay={0.28}>
+            <div className={`${styles.container} ${styles.statsStrip}`}>
+              {STATS.map((stat) => (
+                <div key={stat.label} className={styles.statItem}>
+                  <span className={styles.statIcon}>
+                    <stat.icon className="size-[17px]" strokeWidth={1.7} />
+                  </span>
+                  <div>
+                    <strong className={styles.statValue}>{stat.value}</strong>
+                    <span className={styles.statLabel}>{stat.label}</span>
+                    <span className={styles.statSublabel}>{stat.sublabel}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Reveal>
         </section>
 
         <section id="platform" className={styles.section}>
-          <div className={`${styles.container} ${styles.platformGrid}`}>
+          <div className={`${styles.container} ${styles.workflowSection}`}>
             <div>
               <Reveal>
-                <p className={styles.kicker}>Platform</p>
+                <p className={styles.kicker}>Complete by design</p>
               </Reveal>
               <h2 className={styles.sectionTitle}>
-                <RevealLines lines={["Everything the workflow", "actually needs."]} />
+                <RevealLines
+                  lines={["Everything the", "workflow actually", "needs."]}
+                />
               </h2>
               <Reveal delay={0.08}>
-                <p className={`${styles.copy} mt-4 max-w-[42ch]`}>
-                  Built around how shelf-life studies are really run: a formulation, a
-                  control, a spoilage indicator, and a question about whether a treatment
-                  meaningfully extends the result.
+                <p className={styles.sectionCopy}>
+                  Six capabilities working together so you can trust every prediction and
+                  act on it.
                 </p>
               </Reveal>
             </div>
 
-            <div className={styles.features}>
-              {CAPABILITIES.map((item, index) => (
-                <Reveal key={item.title} delay={(index % 3) * 0.04}>
-                  <article className={styles.feature}>
-                    <span className={styles.featureIndex}>0{index + 1}</span>
-                    <span className={styles.featureIcon}>
-                      <item.icon className="size-4" strokeWidth={1.7} />
-                    </span>
-                    <h3 className={styles.featureTitle}>{item.title}</h3>
-                    <p className={styles.featureBody}>{item.body}</p>
-                  </article>
-                </Reveal>
-              ))}
-            </div>
+            <WorkflowMap />
           </div>
         </section>
 
-        <section id="pipeline" className={`${styles.section} ${styles.pipeline}`}>
+        <section id="pipeline" className={styles.section}>
           <div className={`${styles.container} ${styles.pipelineGrid}`}>
             <div>
               <Reveal>
                 <p className={styles.kicker}>Pipeline</p>
               </Reveal>
               <h2 className={styles.sectionTitle}>
-                <RevealLines lines={["From raw data to a", "served prediction."]} />
+                <RevealLines lines={["From raw data", "to served", "prediction."]} />
               </h2>
               <Reveal delay={0.08}>
-                <p className={`${styles.copy} mt-4 max-w-[37ch]`}>
+                <p className={styles.sectionCopy}>
                   A deliberate, inspectable sequence. Nothing retrains at request time.
                 </p>
               </Reveal>
             </div>
 
-            <div className={styles.steps}>
+            <div className={styles.pipelineSteps}>
               {PIPELINE.map((item, index) => (
-                <Reveal key={item.step} delay={index * 0.035}>
-                  <article className={styles.step}>
+                <Reveal key={item.step} delay={index * 0.035} y={9}>
+                  <article className={styles.pipelineStep}>
                     <span className={styles.stepNumber}>{item.step}</span>
-                    <h3 className={styles.stepTitle}>{item.title}</h3>
-                    <p className={styles.stepBody}>{item.body}</p>
+                    <h3>{item.title}</h3>
+                    <p>{item.body}</p>
                   </article>
                 </Reveal>
               ))}
             </div>
           </div>
-        </section>
 
-        <section className={styles.explainSection}>
-          <Reveal y={0} className={styles.explainPhoto}>
-            <EditorialImage
-              src="/marketing/microbes.jpg"
-              caption="Microbial growth on an agar plate"
-              className="h-full w-full"
-            />
-          </Reveal>
-
-          <div className={styles.explainCopy}>
-            <Reveal>
-              <p className={styles.kicker}>Explainability</p>
-            </Reveal>
-            <h2 className={styles.sectionTitle}>
-              <RevealLines lines={["A number is not", "an answer."]} />
-            </h2>
-            <Reveal delay={0.08}>
-              <p className={`${styles.copy} mt-4`}>
-                Every prediction decomposes into the factors that drove it. Explainability
-                stays visible beside the result instead of being buried in a technical
-                page.
-              </p>
-            </Reveal>
-            <Reveal delay={0.12}>
-              <ul className={styles.explainList}>
-                {["Global feature importance", "Local attribution", "EBM shape functions"].map(
-                  (item) => (
-                    <li key={item} className="flex items-center gap-2">
-                      <Beaker className="size-3 text-primary" />
-                      {item}
-                    </li>
-                  ),
-                )}
-              </ul>
-            </Reveal>
-          </div>
-
-          <div className={styles.chartWrap}>
-            <Reveal y={12} className="w-full">
-              <div className={styles.chartSurface}>
-                <ExplainPreview height={240} />
+          <div className={`${styles.container} ${styles.explainability}`}>
+            <div className={styles.petriStage}>
+              <div className={`${styles.petriBlob} ${styles.petriBlobOne}`} />
+              <div className={`${styles.petriBlob} ${styles.petriBlobTwo}`} />
+              <div className={styles.petriDisc}>
+                <EditorialImage
+                  src="/marketing/microbes.jpg"
+                  caption="Microbial growth on an agar plate"
+                  className="h-full w-full"
+                />
               </div>
+            </div>
+
+            <div className={styles.explainCopy}>
+              <Reveal>
+                <p className={styles.kicker}>Explainability</p>
+              </Reveal>
+              <h2 className={styles.sectionTitle}>
+                <RevealLines lines={["A number is", "not an answer."]} />
+              </h2>
+              <Reveal delay={0.08}>
+                <p className={styles.sectionCopy}>
+                  Every prediction decomposes into the factors that drove it.
+                  Explainability stays visible beside the prediction instead of being
+                  buried in a technical page.
+                </p>
+              </Reveal>
+              <Reveal delay={0.13}>
+                <ul className={styles.explainList}>
+                  {["Global feature importance", "Local attribution", "EBM shape functions"].map(
+                    (item) => (
+                      <li key={item}>
+                        <Check className="size-3.5" strokeWidth={1.8} />
+                        {item}
+                      </li>
+                    ),
+                  )}
+                </ul>
+              </Reveal>
+            </div>
+
+            <Reveal delay={0.12} y={12}>
+              <TiltCard className={styles.chartCard}>
+                <ExplainPreview height={230} />
+              </TiltCard>
             </Reveal>
+
+            <MoleculeArt />
           </div>
         </section>
 
         <section id="research" className={styles.section}>
           <div className={styles.container}>
-            <div className={styles.researchTop}>
+            <div className={styles.researchGrid}>
               <div>
                 <Reveal>
                   <p className={styles.kicker}>Research</p>
                 </Reveal>
                 <h2 className={styles.sectionTitle}>
-                  <RevealLines lines={["Built inside a", "food-science programme."]} />
+                  <RevealLines
+                    lines={["Built inside a", "food-science", "programme."]}
+                  />
                 </h2>
                 <Reveal delay={0.08}>
-                  <p className={`${styles.copy} mt-4 max-w-[40ch]`}>
+                  <p className={styles.sectionCopy}>
                     Preservation research, cheese matrices and controlled storage
                     translated into an inspectable modelling workflow.
                   </p>
+                </Reveal>
+                <Reveal delay={0.12}>
+                  <a href="#validation" className={styles.researchButton}>
+                    Explore our research
+                    <ArrowRight className="size-3.5" />
+                  </a>
                 </Reveal>
               </div>
 
               <div className={styles.gallery}>
                 {RESEARCH_IMAGES.map((item, index) => (
-                  <Reveal key={item.src} delay={index * 0.05} y={12}>
+                  <Reveal key={item.src} delay={index * 0.05} y={10}>
                     <figure className={styles.galleryItem}>
                       <EditorialImage
                         src={item.src}
                         caption={item.label}
                         className="h-full w-full"
                       />
-                      <figcaption className={styles.galleryLabel}>{item.label}</figcaption>
+                      <figcaption>{item.label}</figcaption>
                     </figure>
                   </Reveal>
                 ))}
               </div>
             </div>
 
-            <div className={styles.teamIntro}>
-              <div>
-                <p className={styles.kicker}>Research team</p>
-                <h3 className={styles.teamHeading}>Three collaborators. Equal visual weight.</h3>
-              </div>
-              <p className="hidden max-w-[34ch] text-right text-[0.72rem] leading-5 text-subtle-foreground md:block">
-                Real professional photographs, real affiliations and a consistent
-                side-by-side presentation.
-              </p>
+            <div className={styles.teamHeadingWrap}>
+              <p className={styles.kicker}>Research team</p>
+              <h3>Three collaborators. Equal visual weight.</h3>
             </div>
 
             <div className={styles.teamGrid}>
               {TEAM.map((person, index) => (
-                <Reveal key={person.name} delay={index * 0.055} y={12}>
+                <Reveal key={person.name} delay={index * 0.055} y={10}>
                   <article className={styles.personCard}>
                     <div className={styles.personPhoto}>
                       <EditorialImage
@@ -397,80 +449,58 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="validation" className={`${styles.section} ${styles.validation}`}>
-          <div className={`${styles.container} ${styles.validationGrid}`}>
-            <div>
+        <section id="validation" className={styles.bottomSection}>
+          <div className={styles.validationCopy}>
+            <div className={styles.validationInner}>
               <Reveal>
                 <p className={styles.kicker}>Validation</p>
               </Reveal>
-              <h2 className={styles.sectionTitle}>
+              <h2 className={styles.validationTitle}>
                 <RevealLines lines={["Designed to show", "where it fails."]} />
               </h2>
               <Reveal delay={0.08}>
-                <p className={`${styles.copy} mt-4 max-w-[43ch]`}>
-                  A single headline accuracy number hides more than it reveals. Error is
-                  reported by cheese category so weak generalization stays visible.
+                <p className={styles.validationBody}>
+                  We evaluate where the model performs well—and where it needs more data.
+                  Error is surfaced by cheese category.
                 </p>
               </Reveal>
               <Reveal delay={0.12}>
-                <div className={styles.status}>
-                  <p className={styles.statusTitle}>Current status</p>
-                  <p className={styles.statusBody}>
-                    External literature validation covers 21 published cases. Agreement is
-                    stronger for soft cheeses; hard-cheese error remains substantial and is
-                    reported directly.
-                  </p>
+                <div className={styles.statusBlock}>
+                  <strong>Current status</strong>
+                  <span>
+                    External literature validation: 21 published cases. Stronger agreement
+                    for soft cheeses; substantial error for hard cheeses.
+                  </span>
                 </div>
               </Reveal>
             </div>
+          </div>
 
-            <Reveal y={12}>
-              <TiltCard className={styles.chartSurface}>
-                <CategoryErrorPreview height={210} />
-              </TiltCard>
+          <div className={styles.validationChart}>
+            <Reveal y={10} className="w-full">
+              <div className={styles.validationChartCard}>
+                <CategoryErrorPreview height={190} />
+              </div>
             </Reveal>
           </div>
-        </section>
 
-        <section className={styles.finalSection}>
-          <div className={styles.finalCopy}>
-            <div className={styles.finalInner}>
-              <p className={styles.kicker}>Your workspace</p>
-              <h2 className={styles.sectionTitle}>
-                <RevealLines lines={["Start modelling in", "your own workspace."]} />
-              </h2>
-              <Reveal delay={0.08}>
-                <p className={`${styles.copy} mt-4 max-w-[42ch]`}>
-                  Create an account to run predictions, compare treatments, classify
-                  efficacy and inspect the trained models.
-                </p>
-              </Reveal>
-              <Reveal delay={0.12}>
-                <div className={styles.actions}>
-                  <Link
-                    href="/signup"
-                    className={`${buttonVariants({ size: "lg" })} ${styles.primaryAction}`}
-                  >
-                    Create an account
-                    <ArrowRight className="size-4" />
-                  </Link>
-                  <Link
-                    href="/login"
-                    className={`${buttonVariants({ size: "lg", variant: "outline" })} ${styles.secondaryAction}`}
-                  >
-                    Log in
-                  </Link>
-                </div>
-              </Reveal>
+          <div className={styles.workspaceCta}>
+            <div className={styles.workspaceGlow} />
+            <p className={styles.workspaceKicker}>Your workspace</p>
+            <h2>Start modelling in your own workspace.</h2>
+            <p>
+              Run predictions, compare treatments, classify efficacy and inspect trained
+              models.
+            </p>
+            <div className={styles.workspaceActions}>
+              <Link href="/signup" className={styles.workspacePrimary}>
+                Create an account
+                <ArrowRight className="size-3.5" />
+              </Link>
+              <Link href="/login" className={styles.workspaceSecondary}>
+                Log in
+              </Link>
             </div>
-          </div>
-
-          <div className={styles.finalPhoto}>
-            <EditorialImage
-              src="/marketing/research-banner.png"
-              caption="Macdonald Campus research"
-              className="h-full w-full"
-            />
           </div>
         </section>
       </main>
