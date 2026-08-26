@@ -1,6 +1,7 @@
 "use client";
 
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CHART_AXIS_TICK, CHART_LEGEND_STYLE, CHART_TOOLTIP_LABEL_STYLE, CHART_TOOLTIP_STYLE } from "./chart-theme";
 
 export function LineCurveChart({
   series,
@@ -21,14 +22,14 @@ export function LineCurveChart({
         <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
         <XAxis
           dataKey="x"
-          tick={{ fontSize: 10, fill: "var(--chart-axis)" }}
+          tick={CHART_AXIS_TICK}
           tickLine={false}
           axisLine={{ stroke: "var(--chart-grid)" }}
           label={xLabel ? { value: xLabel, position: "insideBottom", offset: -8, fontSize: 10, fill: "var(--chart-axis)" } : undefined}
         />
-        <YAxis tick={{ fontSize: 10, fill: "var(--chart-axis)" }} tickLine={false} axisLine={false} width={40} />
-        <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6, border: "1px solid var(--border)", background: "var(--popover)", color: "var(--popover-foreground)", boxShadow: "var(--shadow-md)" }} />
-        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <YAxis tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} width={40} />
+        <Tooltip contentStyle={CHART_TOOLTIP_STYLE} labelStyle={CHART_TOOLTIP_LABEL_STYLE} />
+        <Legend wrapperStyle={CHART_LEGEND_STYLE} />
         {series.map((s) => (
           <Line
             key={s.name}

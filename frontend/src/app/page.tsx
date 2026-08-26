@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { initialsOf } from "@/lib/utils";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { Reveal, RevealLines } from "@/components/marketing/reveal";
@@ -22,6 +24,21 @@ import {
   LeaderboardPreview,
 } from "@/components/marketing/previews";
 import { PipelineScroller } from "@/components/marketing/pipeline-scroller";
+
+// Verified against the Karboune Lab's own team page
+// (karboune-group.lab.mcgill.ca/our-team1-1) -- nothing here is invented.
+// A photo can be added per person once supplied (see AvatarImage below);
+// until then each falls back to initials, never a placeholder graphic.
+// TODO: add Loubna Bennabou here once her bio is verified/supplied.
+const RESEARCH_CONTRIBUTORS = [
+  {
+    name: "Zahra Allahdad",
+    credential: "PhD",
+    role: "Research Associate, Karboune Lab (2022–present)",
+    bio: "Focuses on food protein modification, developing functional ingredients that improve food product quality.",
+    photo: undefined as string | undefined,
+  },
+];
 
 const CAPABILITIES = [
   {
@@ -314,6 +331,29 @@ export default function LandingPage() {
                 </div>
               </div>
             </Reveal>
+
+            {RESEARCH_CONTRIBUTORS.length > 0 && (
+              <Reveal delay={0.26} y={18}>
+                <div className={RESEARCH_CONTRIBUTORS.length > 1 ? "mt-4 grid gap-4 sm:grid-cols-2" : "mt-4 grid gap-4"}>
+                  {RESEARCH_CONTRIBUTORS.map((person) => (
+                    <div key={person.name} className="surface flex gap-4 p-6">
+                      <Avatar className="size-11 shrink-0 border border-border">
+                        {person.photo && <AvatarImage src={person.photo} alt="" />}
+                        <AvatarFallback className="type-ui">{initialsOf(person.name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <h4 className="type-title text-foreground">
+                          {person.name}
+                          <span className="text-muted-foreground">, {person.credential}</span>
+                        </h4>
+                        <p className="type-caption mt-0.5 text-subtle-foreground">{person.role}</p>
+                        <p className="type-ui mt-2 max-w-[52ch] leading-relaxed text-muted-foreground">{person.bio}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Reveal>
+            )}
           </div>
         </section>
 

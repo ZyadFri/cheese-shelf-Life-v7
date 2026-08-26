@@ -1,6 +1,7 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CHART_AXIS_TICK, CHART_TOOLTIP_LABEL_STYLE, CHART_TOOLTIP_STYLE } from "./chart-theme";
 
 export function HistogramChart({ counts, edges, color = "var(--primary)" }: { counts: number[]; edges: number[]; color?: string }) {
   const data = counts.map((c, i) => ({
@@ -13,13 +14,13 @@ export function HistogramChart({ counts, edges, color = "var(--primary)" }: { co
         <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
         <XAxis
           dataKey="bin"
-          tick={{ fontSize: 10, fill: "var(--chart-axis)" }}
+          tick={CHART_AXIS_TICK}
           tickLine={false}
           axisLine={{ stroke: "var(--chart-grid)" }}
           interval={3}
         />
         <YAxis
-          tick={{ fontSize: 10, fill: "var(--chart-axis)" }}
+          tick={CHART_AXIS_TICK}
           tickLine={false}
           axisLine={false}
           width={44}
@@ -28,7 +29,8 @@ export function HistogramChart({ counts, edges, color = "var(--primary)" }: { co
         />
         <Tooltip
           cursor={{ fill: "color-mix(in srgb, var(--primary) 5%, transparent)" }}
-          contentStyle={{ fontSize: 12, borderRadius: 6, border: "1px solid var(--border)", background: "var(--popover)", color: "var(--popover-foreground)", boxShadow: "var(--shadow-md)" }}
+          contentStyle={CHART_TOOLTIP_STYLE}
+          labelStyle={CHART_TOOLTIP_LABEL_STYLE}
           labelFormatter={(v) => `≥ ${v}`}
           formatter={(v) => [Number(v).toLocaleString(), "rows"]}
         />

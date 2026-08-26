@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { api, type AuthUser } from "@/lib/api";
+import { isSessionIdle, startActivityTracking } from "@/lib/session-activity";
 
 interface SessionValue {
   user: AuthUser | null;
@@ -38,17 +40,54 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Best-effort: tell the server to drop the cookie too, but the frontend
+  // state is cleared either way -- a network hiccup here must never leave
+  // the UI stuck showing a "signed in" state the idle policy just rejected.
+  const clearSession = React.useCallback(async (reason?: "idle") => {
+    try {
+      await api.logout();
+    } catch {
+      // ignore -- clearing local state below is what actually matters here
+    } finally {
+      setUserState(null);
+    }
+    if (reason === "idle") {
+      toast.info("You were signed out after a period of inactivity.");
+    }
+  }, []);
+
   React.useEffect(() => {
     let active = true;
-    api
-      .me()
-      .then((u) => active && setUserState(u))
-      .catch(() => active && setUserState(null))
-      .finally(() => active && setLoading(false));
+
+    async function hydrate() {
+      // A tab/profile idle longer than the policy is treated as signed out
+      // without even asking the server -- this is what makes "return after
+      // a long time away" require login again, while a normal refresh
+      // (which doesn't imply idle time has passed) hydrates normally below.
+      if (isSessionIdle()) {
+        await clearSession("idle");
+      } else {
+        try {
+          const u = await api.me();
+          if (active) setUserState(u);
+        } catch {
+          if (active) setUserState(null);
+        }
+      }
+      if (active) setLoading(false);
+    }
+
+    hydrate();
+    const stopTracking = startActivityTracking(() => {
+      // Fires while the app is open and inactivity crosses the limit.
+      void clearSession("idle");
+    });
+
     return () => {
       active = false;
+      stopTracking();
     };
-  }, []);
+  }, [clearSession]);
 
   const signIn = React.useCallback(async (email: string, password: string) => {
     setUserState(await api.login({ email, password }));
@@ -59,14 +98,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = React.useCallback(async () => {
-    try {
-      await api.logout();
-    } finally {
-      setUserState(null);
-      router.push("/");
-      router.refresh();
-    }
-  }, [router]);
+    await clearSession();
+    router.push("/");
+    router.refresh();
+  }, [clearSession, router]);
 
   const value = React.useMemo<SessionValue>(
     () => ({ user, loading, signIn, signUp, signOut, setUser: setUserState, refresh }),
@@ -82,10 +117,7 @@ export function useSession() {
   return ctx;
 }
 
-/** Initials fallback for the avatar, e.g. "Ada Lovelace" -> "AL". */
-export function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
+// Re-exported for existing callers -- the real (plain, server-safe)
+// implementation now lives in @/lib/utils so server components (e.g. the
+// landing page) can use it without importing a "use client" module.
+export { initialsOf } from "@/lib/utils";
