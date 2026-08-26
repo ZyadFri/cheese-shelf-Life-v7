@@ -391,6 +391,15 @@ class FallbackProvider(LLMProvider):
     def fallback_names(self) -> list[str]:
         return [f.name for f in self.fallbacks]
 
+    @property
+    def model(self) -> str | None:
+        # Mirrors `name`'s "defaults to primary, updates to whoever actually
+        # answered" behavior -- without this, callers that do
+        # getattr(provider, "model", None) (telemetry, /api/assistant/health)
+        # silently get None for any provider wrapped in a fallback chain.
+        provider = getattr(self, "_last_provider", self.primary)
+        return getattr(provider, "model", None)
+
     def health_check(self) -> dict[str, Any]:
         # Only the primary is checked -- fallback health is reported via the
         # same benchmark/setup tooling used to configure it in the first
