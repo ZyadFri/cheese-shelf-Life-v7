@@ -40,7 +40,7 @@ export function EditorialImage({
             className={cn(
               "object-cover transition-[transform,filter] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/image:scale-[1.045]",
               overlay
-                ? "brightness-[0.55] saturate-[0.94] group-hover/image:brightness-[0.6]"
+                ? "brightness-[0.56] saturate-[0.94] group-hover/image:brightness-[0.61]"
                 : "brightness-[0.98] saturate-[0.98] group-hover/image:brightness-100 group-hover/image:saturate-100",
               imageClassName,
             )}
@@ -48,13 +48,9 @@ export function EditorialImage({
           {overlay && (
             <div
               aria-hidden
-              className="absolute inset-0 bg-gradient-to-t from-black/84 via-black/34 to-black/5"
+              className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/5"
             />
           )}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-0 opacity-0 ring-1 ring-inset ring-white/25 transition-opacity duration-300 group-hover/image:opacity-100"
-          />
         </>
       )}
       <figcaption className="sr-only">{caption}</figcaption>
