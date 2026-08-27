@@ -63,9 +63,9 @@ export function AppSidebar() {
   return (
     <Sidebar
       collapsible="offcanvas"
-      className="border-r border-[#eee2e5] [&>[data-slot=sidebar-inner]]:bg-[linear-gradient(180deg,#fffdfd_0%,#fffafa_48%,#fff6f8_100%)] [&>[data-slot=sidebar-inner]]:backdrop-blur-xl"
+      className="border-r border-[#eee5e8] [&>[data-slot=sidebar-inner]]:bg-[linear-gradient(180deg,#fff_0%,#fffdfd_52%,#fffafa_100%)]"
     >
-      <SidebarHeader className="h-[76px] justify-center border-b border-[#f0e4e7] bg-white/88 px-4 py-0 backdrop-blur-xl">
+      <SidebarHeader className="h-[76px] justify-center border-b border-[#f0e7ea] bg-white px-4 py-0">
         <Link
           href="/app"
           className="flex h-full items-center rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b12046]"
@@ -74,7 +74,7 @@ export function AppSidebar() {
           <img
             src={MCGILL_LOGO}
             alt="McGill University"
-            className="h-[34px] w-auto max-w-[154px] object-contain"
+            className="h-[35px] w-auto max-w-[158px] object-contain"
           />
         </Link>
       </SidebarHeader>
@@ -82,7 +82,7 @@ export function AppSidebar() {
       <SidebarContent className="gap-0 px-3 pt-3">
         {NAV_GROUPS.map((group) => (
           <SidebarGroup key={group.label} className="py-1.5">
-            <SidebarGroupLabel className="h-6 px-2 text-[0.59rem] font-semibold tracking-[0.1em] text-[#b09aa1] uppercase">
+            <SidebarGroupLabel className="h-6 px-2 text-[0.58rem] font-semibold tracking-[0.11em] text-[#b19ba3] uppercase">
               {group.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -94,7 +94,7 @@ export function AppSidebar() {
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton
                         isActive={active}
-                        className="h-9 rounded-[10px] px-3 text-[0.78rem] font-medium text-[#75666c] transition-all hover:bg-[#faecef] hover:text-[#713146] data-[active=true]:bg-[linear-gradient(135deg,#a51d42,#821632)] data-[active=true]:font-semibold data-[active=true]:text-white data-[active=true]:shadow-[0_12px_28px_-20px_rgba(130,22,50,.66)]"
+                        className="h-9 rounded-[11px] px-3 text-[0.78rem] font-medium text-[#75676c] transition-all hover:bg-[#f7f1f3] hover:text-[#65283e] data-[active=true]:bg-[linear-gradient(135deg,#f1eff0,#f5f1f3)] data-[active=true]:font-semibold data-[active=true]:text-[#4e3b43] data-[active=true]:shadow-none"
                         render={<Link href={item.href} />}
                       >
                         <span>{item.label}</span>
@@ -108,7 +108,7 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-[#eee2e5] bg-white/68 p-2 backdrop-blur-xl">
+      <SidebarFooter className="border-t border-[#eee5e8] bg-white/76 p-2 backdrop-blur-xl">
         <UserMenu />
       </SidebarFooter>
     </Sidebar>
