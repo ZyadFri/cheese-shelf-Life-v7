@@ -92,8 +92,8 @@ export function SiteHeader() {
   return (
     <>
       <style>{LANDING_POLISH}</style>
-      <header className="pointer-events-none fixed inset-x-0 top-0 z-[100] px-3 pt-3 sm:px-5 [transform:translateZ(0)]">
-        <div className="pointer-events-auto relative mx-auto flex h-[64px] w-full max-w-[1180px] items-center overflow-hidden rounded-[18px] border border-[#d8bcc5]/70 bg-[linear-gradient(112deg,rgba(255,249,251,.97),rgba(247,224,231,.94)_52%,rgba(255,251,252,.97))] px-4 shadow-[0_18px_46px_-28px_rgba(82,24,41,0.46)] backdrop-blur-2xl backdrop-saturate-150 sm:px-5">
+      <header className="relative z-40 px-3 pt-3 sm:px-5">
+        <div className="relative mx-auto flex h-[64px] w-full max-w-[1180px] items-center overflow-hidden rounded-[18px] border border-[#d8bcc5]/70 bg-[linear-gradient(112deg,rgba(255,249,251,.97),rgba(247,224,231,.94)_52%,rgba(255,251,252,.97))] px-4 shadow-[0_18px_46px_-28px_rgba(82,24,41,0.46)] backdrop-blur-2xl backdrop-saturate-150 sm:px-5">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-[18%] -top-10 h-20 rotate-[-8deg] bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.8),transparent)] opacity-55 blur-xl"
@@ -102,7 +102,7 @@ export function SiteHeader() {
           <Link
             href="/"
             className="group relative z-10 flex shrink-0 items-center rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-            aria-label="McGill University — Shelf-Life Studio home"
+            aria-label="McGill University home"
           >
             <span className="rounded-md bg-white/72 px-1.5 py-1 shadow-[0_5px_18px_-14px_rgba(74,16,34,.5)] transition-transform duration-200 group-hover:scale-[1.02]">
               <img
@@ -178,7 +178,7 @@ export function SiteHeader() {
         </div>
 
         {menuOpen && (
-          <div className="pointer-events-auto mx-auto mt-2 w-full max-w-[1180px] overflow-hidden rounded-[16px] border border-[#ddc6cd]/70 bg-[#fff8fa]/96 px-3 py-3 shadow-[0_18px_44px_-28px_rgba(83,25,42,.45)] backdrop-blur-2xl md:hidden">
+          <div className="mx-auto mt-2 w-full max-w-[1180px] overflow-hidden rounded-[16px] border border-[#ddc6cd]/70 bg-[#fff8fa]/96 px-3 py-3 shadow-[0_18px_44px_-28px_rgba(83,25,42,.45)] backdrop-blur-2xl md:hidden">
             <nav className="flex flex-col">
               {NAV.map((item) => (
                 <a
