@@ -11,7 +11,6 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 import { Reveal, RevealLines } from "@/components/marketing/reveal";
 import { EditorialImage } from "@/components/marketing/editorial-image";
 import {
-  CategoryErrorPreview,
   ExplainPreview,
   HeroProductPreview,
 } from "@/components/marketing/previews";
@@ -562,24 +561,39 @@ export default function LandingPage() {
           <div className={styles.validationLeft}>
             <div className={styles.validationLeftInner}>
               <Reveal><p className={`${styles.kicker} ${SECTION_BADGE}`}>Validation</p></Reveal>
-              <h2 className={styles.validationStoryTitle}><RevealLines lines={["Review performance", "by data context."]} /></h2>
+              <h2 className={styles.validationStoryTitle}><RevealLines lines={["Review before", "using a model."]} /></h2>
               <Reveal delay={0.08}>
                 <p className={styles.validationStoryBody}>
-                  Validation views show where model performance differs across cheese categories and data contexts.
+                  Models are checked on held-out data and across relevant cheese contexts before saved models are used for prediction.
                 </p>
               </Reveal>
 
               <div className={styles.validationDataRow}>
                 <Reveal y={10} className="w-full">
-                  <div className={styles.validationChartCard}><CategoryErrorPreview height={190} /></div>
+                  <div className="w-full rounded-[22px] border border-[#eadde1] bg-[linear-gradient(145deg,#fff,#fff8fa)] p-5 shadow-[0_20px_48px_-38px_rgba(74,25,40,.38)]">
+                    <p className="m-0 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#9f2847]">Validation checks</p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                      {[
+                        ["01", "Held-out data", "Check the model on data that was not used for training."],
+                        ["02", "Context review", "Review behavior across the cheese and endpoint contexts it supports."],
+                        ["03", "Saved model", "Use the validated saved artifact for prediction without retraining."],
+                      ].map(([step, title, body]) => (
+                        <div key={step} className="rounded-[16px] border border-[#eee3e6] bg-white/88 p-3.5">
+                          <span className="text-[0.62rem] font-bold text-[#a51f42]">{step}</span>
+                          <strong className="mt-2 block text-[0.78rem] font-semibold text-[#28272a]">{title}</strong>
+                          <p className="mt-1.5 text-[0.66rem] leading-[1.5] text-[#747177]">{body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </Reveal>
                 <Reveal delay={0.08} y={8}>
                   <aside className={styles.validationStatus}>
-                    <span className={styles.validationPulse}>↗</span>
-                    <strong>Validation view</strong>
-                    <p>Compare performance across cheese categories.</p>
+                    <span className={styles.validationPulse}>✓</span>
+                    <strong>Validation approach</strong>
+                    <p>Review models before they are used for predictions.</p>
                     <i />
-                    <p>Differences are shown directly rather than hidden behind one overall score.</p>
+                    <p>No error scores are surfaced on the landing page.</p>
                   </aside>
                 </Reveal>
               </div>
