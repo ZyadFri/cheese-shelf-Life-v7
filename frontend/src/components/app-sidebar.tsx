@@ -62,17 +62,20 @@ export function AppSidebar() {
       collapsible="offcanvas"
       className="border-r border-[#eee5e8] [&>[data-slot=sidebar-inner]]:bg-[linear-gradient(180deg,#fff_0%,#fffdfd_52%,#fffafa_100%)]"
     >
-      <SidebarHeader className="h-16 justify-center border-b border-[#f0e7ea] bg-white px-4 py-0">
+      <SidebarHeader className="h-[72px] justify-center border-b border-[#f0e7ea] bg-white px-4 py-0">
         <Link
           href="/app"
-          className="flex h-full items-center rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b12046]"
+          className="flex h-full flex-col items-start justify-center rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b12046]"
           aria-label="Shelf-Life Studio home"
         >
           <img
             src={MCGILL_LOGO}
             alt="McGill University"
-            className="h-8 w-auto max-w-[152px] object-contain"
+            className="h-7 w-auto max-w-[146px] object-contain"
           />
+          <span className="mt-0.5 pl-[2px] text-[0.53rem] font-medium tracking-[0.01em] text-[#7d686f]">
+            Shelf-Life Studio
+          </span>
         </Link>
       </SidebarHeader>
 
