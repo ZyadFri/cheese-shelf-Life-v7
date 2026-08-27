@@ -1,6 +1,31 @@
-fastapi
-uvicorn[standard]
-pydantic
-requests
-shap
-python-dotenv
+# Self-contained: everything backend/main.py and its imports (model_service,
+# classification_service, ingredient_ranking_service, specialist_registry,
+# backend.auth, backend.assistant) need to run, pinned to the versions this
+# app is developed and tested against. `pip install -r backend/requirements.txt`
+# alone is enough to run the backend -- it does not depend on the repo-root
+# requirements.txt (that file is for the retired Dash app / training scripts).
+fastapi==0.140.13
+uvicorn[standard]==0.51.0
+pydantic==2.13.4
+requests==2.34.2
+python-dotenv==1.2.2
+python-multipart==0.0.32
+
+# Auth (backend/auth, backend/db.py)
+sqlalchemy==2.0.51
+PyJWT==2.13.0
+argon2-cffi==25.1.0
+
+# Modeling / data (model_service.py, classification_service.py,
+# ingredient_ranking_service.py, specialist_registry.py)
+pandas==2.3.3
+numpy==2.4.6
+openpyxl==3.1.5
+pyarrow==24.0.0
+joblib==1.5.3
+scikit-learn==1.9.0
+lightgbm==4.7.0
+xgboost==3.3.0
+interpret==0.7.8
+shap==0.52.0
+tensorflow==2.21.0

@@ -1,0 +1,7 @@
+# Filled in with the real hostname once the Oracle Cloud VM's public IP is
+# known (sslip.io turns any IP into a real public DNS name for free, so
+# Caddy can get a Let's Encrypt certificate without needing a purchased
+# domain -- e.g. 132-145-12-34.sslip.io for the IP 132.145.12.34).
+REPLACE_WITH_HOSTNAME {
+	reverse_proxy app:8010
+}

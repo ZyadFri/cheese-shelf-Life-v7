@@ -1,0 +1,29 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - backend/.env
+    volumes:
+      # Persists the SQLite user database + avatar uploads across container
+      # rebuilds/restarts -- this is the only stateful storage in the app.
+      - ./backend/storage:/app/backend/storage
+    expose:
+      - "8010"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -6,25 +6,46 @@ RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY backend/requirements.txt ./backend/requirements.txt
+RUN pip install --no-cache-dir -r backend/requirements.txt
 
-# Only the files    actually needed to serve predictions -- no training code,
-# no notebooks, nothing that would let the container retrain anything.
-COPY model_service.py app.py ./ 
-COPY assets/ ./assets/
-COPY artifacts/ ./artifacts/
+# Root-level service modules imported by backend/main.py via sys.path.
+COPY model_service.py classification_service.py ingredient_ranking_service.py specialist_registry.py ./
+
+# The FastAPI package itself (never copies backend/.env or backend/storage --
+# secrets and the SQLite database are supplied/mounted at runtime, not baked
+# into the image).
+COPY backend/__init__.py backend/main.py backend/db.py ./backend/
+COPY backend/auth/ ./backend/auth/
+COPY backend/assistant/ ./backend/assistant/
+
+# Data actually read at runtime (ModelService + the V6 specialist registry).
+# No training data beyond what those two modules load; no notebooks, no
+# training scripts -- nothing that would let the container retrain anything.
 COPY data/raw/CHEESE_SHELF_LIFE_REVISED_READY_TO_TRAIN.xlsx ./data/raw/CHEESE_SHELF_LIFE_REVISED_READY_TO_TRAIN.xlsx
+COPY data/raw/CHEESE_SHELF_LIFE_V6_SOFT_SPECIALIST.csv ./data/raw/CHEESE_SHELF_LIFE_V6_SOFT_SPECIALIST.csv
+COPY data/raw/CHEESE_SHELF_LIFE_V6_SEMI_HARD_SPECIALIST.csv ./data/raw/CHEESE_SHELF_LIFE_V6_SEMI_HARD_SPECIALIST.csv
+COPY data/raw/CHEESE_SHELF_LIFE_V6_HARD_SPECIALIST.csv ./data/raw/CHEESE_SHELF_LIFE_V6_HARD_SPECIALIST.csv
 
-RUN useradd --create-home appuser && chown -R appuser:appuser /app
+# Trained model artifacts. These are gitignored (regenerable via
+# train_models.py / train_specialists.py / train_classifier.py /
+# train_ingredient_ranking.py) and never pulled by `git clone` -- the build
+# context on the deploy host must have these four directories placed here
+# (e.g. via `scp -r` from wherever they were trained) before `docker build`.
+COPY artifacts/ ./artifacts/
+COPY artifacts_v6/ ./artifacts_v6/
+COPY artifacts_classification/ ./artifacts_classification/
+COPY artifacts_ingredient_ranking/ ./artifacts_ingredient_ranking/
+
+RUN useradd --create-home appuser \
+    && mkdir -p /app/backend/storage \
+    && chown -R appuser:appuser /app
 USER appuser
 
 ENV TF_CPP_MIN_LOG_LEVEL=3 \
     TF_ENABLE_ONEDNN_OPTS=0 \
     PYTHONUNBUFFERED=1
 
-EXPOSE 8050
+EXPOSE 8010
 
-# Render (and most PaaS Docker runners) inject $PORT and expect the process to
-# bind to it; default to 8050 for local `docker run` where $PORT is unset.
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8050} --workers 1 --threads 4 --timeout 120 app:server"]
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8010"]

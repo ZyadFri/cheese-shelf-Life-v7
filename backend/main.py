@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Any, Optional
@@ -95,14 +96,20 @@ CLF_MODEL_BLURBS = {
     "xgboost": "Gradient-boosted trees; typically the sharper decision boundary of the two classifiers.",
 }
 
+# CORS_ORIGINS lets production set the real frontend origin(s) without a code
+# change; unset/blank keeps the local-dev defaults. Comma-separated, e.g.
+# "https://shelf-life-studio.vercel.app". Note allow_credentials forbids a
+# wildcard origin -- an explicit list is load-bearing, not just tidiness.
+_env_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]
+CORS_ORIGINS = _env_origins or ["http://localhost:3000", "http://127.0.0.1:3000"]
+
 app = FastAPI(title="Shelf-Life Studio API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=CORS_ORIGINS,
     # Required for the httpOnly session cookie to travel on cross-origin XHR
-    # (the frontend is a different port, so every API call is cross-origin).
-    # Note allow_credentials forbids a wildcard origin -- the explicit list above
-    # is load-bearing, not just tidiness.
+    # (the frontend is a different origin, so every direct browser->API call
+    # would otherwise be blocked).
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
