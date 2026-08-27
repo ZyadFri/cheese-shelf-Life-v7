@@ -44,7 +44,7 @@ export interface PredictionV6State {
   headspaceOxygenPct: number | null;
   headspaceCo2Pct: number | null;
   headspaceN2Pct: number | null;
-  pasteurizationApplied: boolean;
+  pasteurizationApplied: boolean | null;
   indicatorGroup: string | null;
   indicatorType: string | null;
   indicatorUnit: string | null;
@@ -72,7 +72,7 @@ const initialState: PredictionV6State = {
   headspaceOxygenPct: null,
   headspaceCo2Pct: null,
   headspaceN2Pct: null,
-  pasteurizationApplied: true,
+  pasteurizationApplied: null,
   indicatorGroup: null,
   indicatorType: null,
   indicatorUnit: null,
@@ -94,6 +94,13 @@ type Action =
   | { type: "changeCheese" }
   | { type: "changePresentation" }
   | { type: "reset" };
+
+function parseBackendBoolean(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  if (value === 1 || value === "1" || value === "true") return true;
+  if (value === 0 || value === "0" || value === "false") return false;
+  return null;
+}
 
 function reducer(state: PredictionV6State, action: Action): PredictionV6State {
   switch (action.type) {
@@ -143,6 +150,7 @@ function reducer(state: PredictionV6State, action: Action): PredictionV6State {
         headspaceOxygenPct: state.headspaceOxygenPct ?? schema.numeric_ranges.headspace_oxygen_pct?.median ?? null,
         headspaceCo2Pct: state.headspaceCo2Pct ?? schema.numeric_ranges.headspace_co2_pct?.median ?? null,
         headspaceN2Pct: state.headspaceN2Pct ?? schema.numeric_ranges.headspace_n2_pct?.median ?? null,
+        pasteurizationApplied: state.pasteurizationApplied ?? parseBackendBoolean(schema.control_template.pasteurization_applied),
         indicatorGroup: state.indicatorGroup ?? schema.categorical_modes.indicator_group ?? schema.categorical_options.indicator_group?.[0] ?? null,
         indicatorType: state.indicatorType ?? schema.categorical_modes.indicator_type ?? schema.categorical_options.indicator_type?.[0] ?? null,
         indicatorUnit: state.indicatorUnit ?? schema.categorical_modes.indicator_unit ?? schema.categorical_options.indicator_unit?.[0] ?? null,
