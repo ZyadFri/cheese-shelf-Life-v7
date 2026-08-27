@@ -1,3 +1,4 @@
+import type { ComponentType } from "react";
 import { Database, Gauge, Layers, Target } from "lucide-react";
 
 import { api } from "@/lib/api";
@@ -91,7 +92,7 @@ function MetricCard({
   label: string;
   value: string;
   suffix?: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   tone: "rose" | "neutral" | "green";
 }) {
   const iconTone = tone === "green"
