@@ -11,7 +11,7 @@ export type FlowStep = "cheese" | "form" | "profile" | "conditions" | "results";
 export interface TreatmentState {
   ingredientName: string;
   ingredientFamily: string | null;
-  concentration: number;
+  concentration: number | null;
   concentrationUnit: string;
   applicationMethod: string;
   treatmentType: string;
