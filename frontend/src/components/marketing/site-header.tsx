@@ -83,6 +83,187 @@ main #validation h2 {
   font-weight: 520 !important;
   letter-spacing: -.045em !important;
 }
+
+/* Landing pipeline — intentionally mirrors the clean five-card reference. */
+main #pipeline [class*="pipelineStory"] {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 2.7rem !important;
+  align-items: stretch !important;
+  padding-bottom: 4.3rem !important;
+}
+main #pipeline [class*="pipelineIntro"] {
+  position: static !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, .78fr) !important;
+  column-gap: clamp(2rem, 6vw, 6rem) !important;
+  row-gap: .45rem !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  align-items: end !important;
+}
+main #pipeline [class*="pipelineIntro"] > div:first-of-type {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+}
+main #pipeline [class*="pipelineIntro"] > h2 {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  max-width: 12ch !important;
+  margin-bottom: 0 !important;
+}
+main #pipeline [class*="pipelineIntro"] > div:nth-of-type(2) {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  align-self: end !important;
+  padding-bottom: .55rem !important;
+}
+main #pipeline [class*="pipelineIntro"] [class*="pipelineCopy"] {
+  max-width: 31rem !important;
+  margin: 0 !important;
+}
+main #pipeline [class*="pipelineIntro"] > div:nth-of-type(3) {
+  position: absolute !important;
+  left: 0 !important;
+  bottom: .2rem !important;
+  z-index: 3 !important;
+}
+main #pipeline [class*="pipelineBenchPhoto"] {
+  display: none !important;
+}
+main #pipeline [class*="pipelineCanvas"] {
+  min-height: 0 !important;
+  padding: 0 !important;
+  isolation: auto !important;
+}
+main #pipeline [class*="pipelineTexture"],
+main #pipeline [class*="pipelineCurve"],
+main #pipeline [class*="pipelineAxis"] {
+  display: none !important;
+}
+main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) {
+  position: relative !important;
+  z-index: 2 !important;
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 1.45rem !important;
+  padding: 0 !important;
+}
+main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div {
+  position: relative !important;
+  min-width: 0 !important;
+}
+main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  right: -1.18rem;
+  top: 48%;
+  z-index: 8;
+  transform: translateY(-50%);
+  color: #aa2144;
+  font-size: 1.45rem;
+  font-weight: 400;
+  line-height: 1;
+}
+main #pipeline [class*="pipelineCanvas"] article {
+  position: relative !important;
+  display: flex !important;
+  min-height: 27.5rem !important;
+  height: 100% !important;
+  flex-direction: column !important;
+  padding: 1.15rem !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(220, 216, 218, .96) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.96) !important;
+  box-shadow: 0 18px 42px -34px rgba(61, 37, 44, .34) !important;
+}
+main #pipeline [class*="pipelineStepBadge"] {
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 0 1rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #a82043 !important;
+  box-shadow: none !important;
+  font-size: 1.08rem !important;
+  font-weight: 760 !important;
+  line-height: 1 !important;
+}
+main #pipeline [class*="pipelineCanvas"] article > div {
+  width: 100% !important;
+  height: 12.1rem !important;
+  min-height: 12.1rem !important;
+  margin: 0 0 1.25rem !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  box-shadow: none !important;
+}
+main #pipeline [class*="pipelineCanvas"] article > div > * {
+  display: none !important;
+}
+main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(1) article > div {
+  background-image: linear-gradient(rgba(255,255,255,.04), rgba(255,255,255,.04)), url('/marketing/lab.jpg') !important;
+}
+main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(2) article > div {
+  background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/e8/Sterilization_effects_of_negative_air_ionization.jpg') !important;
+}
+main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(3) article > div {
+  background-image: url('https://res.cloudinary.com/moreworks/image/upload/v1723518881/guide/%E3%82%B3%E3%83%BC%E3%83%80%E3%83%BC%E3%81%A8%E3%81%AF/pixta_51347154_XL.jpg') !important;
+}
+main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(4) article > div {
+  background-image: url('https://images.unsplash.com/photo-1584169417032-d34e8d805e8b?auto=format&fit=crop&w=1200&q=82') !important;
+}
+main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(5) article > div {
+  background-image: url('https://images.unsplash.com/photo-1580983559367-0dc2f8934365?auto=format&fit=crop&w=1200&q=82') !important;
+}
+main #pipeline [class*="pipelineCanvas"] article h3 {
+  margin: 0 !important;
+  color: #242326 !important;
+  font-size: .98rem !important;
+  font-weight: 720 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -.018em !important;
+}
+main #pipeline [class*="pipelineCanvas"] article p {
+  min-height: 0 !important;
+  margin: .65rem 0 0 !important;
+  color: #707077 !important;
+  font-size: .78rem !important;
+  line-height: 1.55 !important;
+}
+@media (max-width: 1080px) {
+  main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) {
+    grid-template-columns: repeat(5, minmax(12rem, 1fr)) !important;
+    overflow-x: auto !important;
+    padding: 0 0 1rem !important;
+    scroll-snap-type: x proximity;
+  }
+  main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div {
+    scroll-snap-align: start;
+  }
+}
+@media (max-width: 760px) {
+  main #pipeline [class*="pipelineIntro"] {
+    grid-template-columns: 1fr !important;
+  }
+  main #pipeline [class*="pipelineIntro"] > div:first-of-type,
+  main #pipeline [class*="pipelineIntro"] > h2,
+  main #pipeline [class*="pipelineIntro"] > div:nth-of-type(2) {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+  main #pipeline [class*="pipelineStory"] {
+    padding-bottom: 4.8rem !important;
+  }
+}
 `;
 
 export function SiteHeader() {
