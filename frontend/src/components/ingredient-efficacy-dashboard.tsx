@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import {
-  CheckCircle2,
   Database,
   Download,
   FlaskConical,
@@ -19,25 +18,22 @@ import { IngredientDetailSheet } from "@/components/ingredient-detail-sheet";
 const TIER_ORDER = ["High", "Medium", "Low"] as const;
 type Tier = (typeof TIER_ORDER)[number];
 
-const TIER_STYLE: Record<Tier, { dot: string; text: string; soft: string; border: string; pill: string }> = {
+const TIER_STYLE: Record<Tier, { dot: string; text: string; border: string; pill: string }> = {
   High: {
     dot: "#149060",
     text: "text-[#137a52]",
-    soft: "bg-[#edf8f2]",
     border: "border-[#cce9db]",
     pill: "bg-[#e0f3e9] text-[#137a52]",
   },
   Medium: {
     dot: "#e2a21e",
     text: "text-[#b67508]",
-    soft: "bg-[#fff8e9]",
     border: "border-[#f2dfb8]",
     pill: "bg-[#fbefd8] text-[#a86c07]",
   },
   Low: {
     dot: "#e15151",
     text: "text-[#c43e43]",
-    soft: "bg-[#fff1f1]",
     border: "border-[#f1d1d3]",
     pill: "bg-[#fde5e5] text-[#c63e43]",
   },
@@ -268,7 +264,7 @@ function TierSummaryCard({ tier, rows, active, onView }: { tier: Tier; rows: Ing
     <div className={`rounded-[17px] border bg-white p-4 transition-all ${active ? `${style.border} shadow-[0_14px_34px_-26px_rgba(64,24,38,.32)]` : "border-[#e8dfe2]"}`}>
       <div className="flex items-center justify-between">
         <h3 className={`flex items-center gap-2 text-[13px] font-semibold ${style.text}`}><span className="size-2 rounded-full" style={{ backgroundColor: style.dot }} />{tier.toUpperCase()} <span className="text-[10px] font-medium opacity-70">({rows.length})</span></h3>
-        <button type="button" onClick={onView} className={`rounded-[8px] border px-2 py-1 text-[9px] font-semibold ${style.border} ${style.text} hover:${style.soft}`}>{active ? "Show all" : "View all"}</button>
+        <button type="button" onClick={onView} className={`rounded-[8px] border px-2 py-1 text-[9px] font-semibold transition hover:bg-[#fff8fa] ${style.border} ${style.text}`}>{active ? "Show all" : "View all"}</button>
       </div>
       <div className="mt-3 space-y-2">
         {rows.slice(0, 3).map((row) => (
@@ -326,7 +322,7 @@ function EfficacyLandscape({ rankings, onSelect }: { rankings: IngredientRanking
                 title={`${displayName(row.ingredient_name)} · ${signedPct(row.adjusted_effect_pct)} · n=${row.n_train}`}
               >
                 <span
-                  className="mx-auto block rounded-full border-2 border-white/90 shadow-[0_8px_20px_-12px_rgba(28,20,23,.55)] transition-transform duration-200 group-hover:scale-110"
+                  className="mx-auto block rounded-full border-2 border-white/90 transition-transform duration-200 group-hover:scale-110"
                   style={{ width: size, height: size, background: `radial-gradient(circle at 35% 30%, white 0%, ${style.dot}55 38%, ${style.dot}bb 100%)`, boxShadow: `0 0 0 1px ${style.dot}45, 0 8px 20px -12px rgba(28,20,23,.5)` }}
                 />
                 <span className={`mt-1 block truncate text-[8.5px] font-semibold leading-tight ${style.text}`}>{displayName(row.ingredient_name)}</span>
