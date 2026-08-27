@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { api } from "@/lib/api";
 import cheeseImages from "@/data/cheese-images.json";
@@ -47,6 +48,8 @@ const PREDICTION_EXAMPLES: PredictionExample[] = [
     sourceLabel: "External-test case · Favati 2007",
   },
 ];
+
+const DRIVER_EXAMPLES = ["Moisture", "Salt", "pH", "Storage temperature"] as const;
 
 export default async function HomePage() {
   const [manifest, synthetic] = await Promise.all([api.manifest(), api.datasetSynthetic()]);
@@ -179,18 +182,17 @@ export default async function HomePage() {
 
             <WorkflowStep number="2" title="Model & train" description="Train and compare multiple modeling approaches against the same prepared data.">
               <div className="relative h-[116px] overflow-hidden rounded-[12px] bg-[#f6edef]">
-                <img src="/marketing/cheese-aging.jpg" alt="Cheese aging shelves" className="absolute inset-0 h-full w-full object-cover opacity-30" />
-                <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,.88),rgba(255,248,250,.72))]" />
-                <div className="relative grid h-full content-center gap-2 p-3">
+                <img src="/marketing/cheese-aging.jpg" alt="Cheese aging shelves" className="absolute inset-0 h-full w-full object-cover opacity-25" />
+                <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,.9),rgba(255,248,250,.8))]" />
+                <div className="relative flex h-full flex-col justify-center p-3">
                   <span className="text-[0.47rem] font-semibold uppercase tracking-[0.08em] text-[#a0808b]">Available model families</span>
-                  {modelNames.map((name, index) => (
-                    <div key={name} className="grid grid-cols-[minmax(0,1fr)_54px] items-center gap-2 text-[0.49rem] text-[#705963]">
-                      <span className="truncate">{name}</span>
-                      <span className="h-1.5 overflow-hidden rounded-full bg-[#eedde3]">
-                        <span className="block h-full rounded-full bg-[linear-gradient(90deg,#a72549,#cf7189)]" style={{ width: `${72 - index * 9}%` }} />
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    {modelNames.map((name) => (
+                      <span key={name} className="rounded-full border border-[#ead8de] bg-white/88 px-2 py-1 text-[0.47rem] font-medium text-[#74515e] shadow-sm">
+                        {name}
                       </span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </WorkflowStep>
@@ -215,20 +217,13 @@ export default async function HomePage() {
             <WorkflowStep number="4" title="Understand drivers" description="See the formulation and storage factors that push each prediction up or down.">
               <div className="relative h-[116px] overflow-hidden rounded-[12px] bg-[#f8f1f3] p-3">
                 <img src="/images/microscope.jpg" alt="Microscope in a food-science lab" className="absolute inset-0 h-full w-full object-cover opacity-[.09]" />
-                <div className="relative grid h-full content-center gap-2">
-                  {[
-                    ["Moisture", "82%"],
-                    ["Salt", "62%"],
-                    ["pH", "48%"],
-                    ["Storage temperature", "71%"],
-                  ].map(([label, width]) => (
-                    <div key={label} className="grid grid-cols-[88px_minmax(0,1fr)] items-center gap-2 text-[0.46rem] text-[#705a63]">
-                      <span className="truncate">{label}</span>
-                      <span className="h-1.5 overflow-hidden rounded-full bg-white/90">
-                        <span className="block h-full rounded-full bg-[linear-gradient(90deg,#a62549,#d9869a)]" style={{ width }} />
-                      </span>
-                    </div>
+                <div className="relative flex h-full flex-wrap content-center gap-1.5">
+                  {DRIVER_EXAMPLES.map((label) => (
+                    <span key={label} className="rounded-full border border-[#ead8de] bg-white/86 px-2 py-1 text-[0.46rem] font-medium text-[#76535f] shadow-sm">
+                      {label}
+                    </span>
                   ))}
+                  <span className="mt-1 block w-full text-[0.45rem] leading-4 text-[#9b858e]">Per-prediction contributions are available in Explainability.</span>
                 </div>
               </div>
             </WorkflowStep>
@@ -278,7 +273,7 @@ function WorkflowStep({
   number: string;
   title: string;
   description: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <article className="group relative overflow-hidden rounded-[17px] border border-[#eee2e6] bg-white/92 p-3.5 shadow-[0_12px_30px_-26px_rgba(82,28,45,.44)] transition-all duration-300 hover:-translate-y-1 hover:border-[#d9b8c3] hover:shadow-[0_20px_38px_-25px_rgba(82,28,45,.46)]">
