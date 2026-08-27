@@ -27,10 +27,7 @@ const NAV_GROUPS = [
   },
   {
     label: "Data",
-    items: [
-      { href: "/app/synthetic", label: "Synthetic" },
-      { href: "/app/real", label: "Real" },
-    ],
+    items: [{ href: "/app/data", label: "Data" }],
   },
   {
     label: "Models",
@@ -94,7 +91,7 @@ export function AppSidebar() {
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton
                         isActive={active}
-                        className="h-9 rounded-[11px] px-3 text-[0.78rem] font-medium text-[#75676c] transition-all hover:bg-[#f7f1f3] hover:text-[#65283e] data-[active=true]:bg-[linear-gradient(135deg,#f1eff0,#f5f1f3)] data-[active=true]:font-semibold data-[active=true]:text-[#4e3b43] data-[active=true]:shadow-none"
+                        className="h-9 rounded-[11px] px-3 text-[0.78rem] font-medium text-[#75676c] transition-all hover:bg-[#f7f1f3] hover:text-[#65283e] data-[active=true]:bg-[linear-gradient(135deg,#fff0f4,#f9e7ed)] data-[active=true]:font-semibold data-[active=true]:text-[#7c2945] data-[active=true]:shadow-none"
                         render={<Link href={item.href} />}
                       >
                         <span>{item.label}</span>
