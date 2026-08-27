@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import { Menu, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -88,29 +87,13 @@ main #validation h2 {
 
 export function SiteHeader() {
   const { user, loading } = useSession();
-  const [scrolled, setScrolled] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
-  const { scrollY } = useScroll();
-
-  useMotionValueEvent(scrollY, "change", (v) => setScrolled(v > 8));
 
   return (
     <>
       <style>{LANDING_POLISH}</style>
-      <motion.header
-        initial={{ y: -10, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-        className="pointer-events-none fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5"
-      >
-        <div
-          className={cn(
-            "pointer-events-auto relative mx-auto flex h-[64px] w-full max-w-[1180px] items-center overflow-hidden rounded-[18px] border px-4 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 sm:px-5",
-            scrolled
-              ? "border-[#d8bcc5]/65 bg-[linear-gradient(112deg,rgba(255,249,251,.97),rgba(247,224,231,.94)_52%,rgba(255,251,252,.97))] shadow-[0_18px_46px_-28px_rgba(82,24,41,0.46)] backdrop-blur-2xl"
-              : "border-[#e3cfd5]/62 bg-[linear-gradient(112deg,rgba(255,251,252,.93),rgba(249,230,235,.86)_52%,rgba(255,252,253,.94))] shadow-[0_14px_38px_-30px_rgba(82,24,41,0.38)] backdrop-blur-xl",
-          )}
-        >
+      <header className="pointer-events-none fixed inset-x-0 top-0 z-[100] px-3 pt-3 sm:px-5 [transform:translateZ(0)]">
+        <div className="pointer-events-auto relative mx-auto flex h-[64px] w-full max-w-[1180px] items-center overflow-hidden rounded-[18px] border border-[#d8bcc5]/70 bg-[linear-gradient(112deg,rgba(255,249,251,.97),rgba(247,224,231,.94)_52%,rgba(255,251,252,.97))] px-4 shadow-[0_18px_46px_-28px_rgba(82,24,41,0.46)] backdrop-blur-2xl backdrop-saturate-150 sm:px-5">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-[18%] -top-10 h-20 rotate-[-8deg] bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.8),transparent)] opacity-55 blur-xl"
@@ -118,18 +101,15 @@ export function SiteHeader() {
 
           <Link
             href="/"
-            className="group relative z-10 flex shrink-0 items-center gap-3 rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+            className="group relative z-10 flex shrink-0 items-center rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+            aria-label="McGill University — Shelf-Life Studio home"
           >
-            <span className="rounded-md bg-white/72 px-1.5 py-1 shadow-[0_5px_18px_-14px_rgba(74,16,34,.5)]">
+            <span className="rounded-md bg-white/72 px-1.5 py-1 shadow-[0_5px_18px_-14px_rgba(74,16,34,.5)] transition-transform duration-200 group-hover:scale-[1.02]">
               <img
                 src={MCGILL_LOGO}
                 alt="McGill University"
-                className="h-[29px] w-auto shrink-0 object-contain"
+                className="h-[31px] w-auto shrink-0 object-contain"
               />
-            </span>
-            <span className="h-7 w-px bg-[#cdb8be]" aria-hidden />
-            <span className="text-[0.9rem] font-semibold tracking-[-0.022em] text-[#242326] transition-colors group-hover:text-primary">
-              Shelf-Life Studio
             </span>
           </Link>
 
@@ -222,7 +202,7 @@ export function SiteHeader() {
             </nav>
           </div>
         )}
-      </motion.header>
+      </header>
     </>
   );
 }
