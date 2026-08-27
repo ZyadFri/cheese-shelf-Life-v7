@@ -12,6 +12,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { BarHChart } from "@/components/charts/bar-h-chart";
 import { Collapsible, CollapsibleTrigger, CollapsiblePanel } from "@/components/ui/collapsible";
 import { ClassificationExplorer } from "@/components/classification-explorer";
+import { ClassificationAIGuide } from "@/components/classification-ai-guide";
 import { humanizeFeature, humanizeValue } from "@/lib/classification-labels";
 
 const CLASS_BADGE_VARIANT: Record<string, "destructive" | "warning" | "success"> = {
@@ -103,6 +104,17 @@ export default async function ClassificationPage() {
         <KpiCard label="Correctly classified" numericValue={(bestSummary?.test_accuracy ?? 0) * 100} decimals={1} suffix="%" icon={<Target className="h-4 w-4" />} tone="primary" animateIn />
       </Stagger>
 
+      <ClassificationAIGuide
+        context={{
+          classNames: class_definitions.class_names,
+          lowMaxPct: class_definitions.thresholds_pct.low_max,
+          mediumMaxPct: class_definitions.thresholds_pct.medium_max,
+          treatedFormulations: manifest.n_total_treated_rows,
+          bestClassifier: bestSummary?.label ?? best_model,
+          testAccuracy: bestSummary?.test_accuracy ?? null,
+        }}
+      />
+
       {/* ── What & how ────────────────────────────────────────────────────── */}
       <Reveal>
         <SectionLabel>What is being classified</SectionLabel>
@@ -113,7 +125,7 @@ export default async function ClassificationPage() {
               so every classification uses the full formulation, never an ingredient alone.
             </p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-5">
-              {METHOD_STEPS.map((step, i) => (
+              {METHOD_STEPS.map((step) => (
                 <div key={step.title} className="flex flex-col items-center text-center sm:items-start sm:text-left">
                   <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-primary">
                     <step.icon className="h-4 w-4" />
