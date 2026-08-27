@@ -26,8 +26,9 @@ import { TopbarUserMenu } from "@/components/topbar-user-menu";
 
 const ROUTES: Record<string, { label: string; icon: typeof Home }> = {
   "/app": { label: "Home", icon: Home },
-  "/app/synthetic": { label: "Synthetic dataset", icon: Database },
-  "/app/real": { label: "Real dataset", icon: Database },
+  "/app/data": { label: "Data", icon: Database },
+  "/app/synthetic": { label: "Data", icon: Database },
+  "/app/real": { label: "Data", icon: Database },
   "/app/modeling": { label: "Modeling", icon: ListTree },
   "/app/prediction": { label: "Prediction", icon: FlaskConical },
   "/app/results": { label: "Results", icon: GitCompare },
