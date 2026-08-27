@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import {
   ArrowRight,
   Check,
@@ -19,6 +18,9 @@ import {
 import { TiltCard } from "@/components/marketing/landing-interactions";
 import { CapabilityStage } from "@/components/marketing/capability-stage";
 import styles from "./landing.module.css";
+
+const SECTION_BADGE =
+  "inline-flex items-center rounded-full border border-[#e8c6d0]/80 bg-[linear-gradient(110deg,rgba(255,255,255,.96),rgba(248,224,231,.92),rgba(255,255,255,.96))] px-3 py-1.5 shadow-[0_12px_30px_-22px_rgba(155,28,60,.65)] backdrop-blur-sm";
 
 const TEAM = [
   {
@@ -51,7 +53,7 @@ const PIPELINE = [
   {
     step: "01",
     title: "Prepare the data",
-    body: "Load the cheese data and prepare the information used by the models.",
+    body: "Organize the cheese, storage, packaging and indicator information used by the models.",
   },
   {
     step: "02",
@@ -61,7 +63,7 @@ const PIPELINE = [
   {
     step: "03",
     title: "Select the model",
-    body: "Use the cheese category and prediction endpoint to choose the appropriate model.",
+    body: "Choose the appropriate model from the cheese category and prediction endpoint.",
   },
   {
     step: "04",
@@ -71,7 +73,7 @@ const PIPELINE = [
   {
     step: "05",
     title: "Validate and predict",
-    body: "Check the model on held-out data, then use the saved model to make predictions.",
+    body: "Check performance on held-out data, then use the saved model for predictions.",
   },
 ];
 
@@ -85,21 +87,23 @@ function PipelineMini({ index }: { index: number }) {
   if (index === 0) {
     return <div className={`${styles.pipelineDots} ${styles.pipelineDotsCloud}`} aria-hidden />;
   }
+
   if (index === 1) {
     return (
-      <div className="mb-4 overflow-hidden rounded-[14px] border border-[#eadde1] bg-white shadow-[0_12px_28px_-22px_rgba(76,31,43,.35)]">
-        <EditorialImage
-          src="/marketing/lab.jpg"
-          caption="Matched control and treatment samples in a food science laboratory"
-          className="h-[88px] w-full"
-          imageClassName="object-cover object-center"
+      <figure className="w-full overflow-hidden rounded-[14px] border border-[#ead8de] bg-white shadow-[0_14px_30px_-24px_rgba(87,31,46,.42)]">
+        <img
+          src="https://upload.wikimedia.org/wikipedia/commons/e/e8/Sterilization_effects_of_negative_air_ionization.jpg"
+          alt="Untreated and treated laboratory Petri-dish samples shown side by side"
+          loading="lazy"
+          className="h-[92px] w-full object-cover object-center"
         />
-        <p className="!m-0 border-t border-[#efe5e8] bg-[#fffafb] px-2.5 py-2 text-[0.46rem] !leading-[1.35] text-[#806f75]">
-          Related control and treatment samples stay in the same group.
-        </p>
-      </div>
+        <figcaption className="border-t border-[#f0e3e7] bg-[#fffafb] px-2.5 py-2 text-[0.45rem] leading-[1.35] text-[#806f75]">
+          Control and treatment samples remain grouped together.
+        </figcaption>
+      </figure>
     );
   }
+
   if (index === 2) {
     return (
       <div className={styles.routeMini} aria-hidden>
@@ -108,15 +112,22 @@ function PipelineMini({ index }: { index: number }) {
       </div>
     );
   }
+
   if (index === 3) {
     return (
-      <div className={styles.modelMini} aria-hidden>
-        {["LightGBM", "XGBoost", "Random Forest", "EBM"].map((name, i) => (
-          <div key={name}><span>{name}</span><i style={{ "--w": `${[92, 67, 55, 39][i]}%` } as CSSProperties} /></div>
+      <div className="grid w-full grid-cols-2 gap-2" aria-label="Supported model families">
+        {["LightGBM", "XGBoost", "Random Forest", "EBM"].map((name) => (
+          <span
+            key={name}
+            className="rounded-full border border-[#eadde1] bg-white/88 px-2 py-1.5 text-center text-[0.43rem] font-medium text-[#696166] shadow-[0_8px_20px_-18px_rgba(68,29,40,.35)]"
+          >
+            {name}
+          </span>
         ))}
       </div>
     );
   }
+
   return (
     <div className={styles.serveMini} aria-hidden>
       <span><Check className="size-5" strokeWidth={2} /></span>
@@ -161,11 +172,11 @@ export default function LandingPage() {
       <SiteHeader />
 
       <main className={styles.page}>
-        <section className={styles.hero}>
+        <section className={`${styles.hero} !pt-[3.2rem]`}>
           <div className={`${styles.container} ${styles.heroGrid}`}>
             <div className={styles.heroCopy}>
               <Reveal immediate>
-                <p className={styles.eyebrow}>Cheese shelf-life modelling</p>
+                <p className={`${styles.eyebrow} ${SECTION_BADGE}`}>Cheese shelf-life modelling</p>
               </Reveal>
 
               <h1 className={styles.heroTitle}>
@@ -208,13 +219,13 @@ export default function LandingPage() {
         <section id="platform" className={`${styles.section} ${styles.platformSection}`}>
           <div className={`${styles.container} ${styles.platformEditorial}`}>
             <div className={styles.platformIntro}>
-              <Reveal><p className={styles.kicker}>Complete by design</p></Reveal>
+              <Reveal><p className={`${styles.kicker} ${SECTION_BADGE}`}>Complete by design</p></Reveal>
               <h2 className={styles.platformTitle}>
                 <RevealLines lines={["Everything the", "workflow actually", "needs."]} />
               </h2>
               <Reveal delay={0.08}>
                 <p className={styles.platformCopy}>
-                  Six capabilities working together so you can trust every prediction and act on it.
+                  Six capabilities working together so you can review each stage of the shelf-life workflow in one place.
                 </p>
               </Reveal>
               <Reveal delay={0.13}>
@@ -230,7 +241,7 @@ export default function LandingPage() {
         <section id="pipeline" className={`${styles.section} ${styles.pipelineStorySection}`}>
           <div className={`${styles.container} ${styles.pipelineStory}`}>
             <div className={styles.pipelineIntro}>
-              <Reveal><p className={styles.kicker}>Pipeline</p></Reveal>
+              <Reveal><p className={`${styles.kicker} ${SECTION_BADGE}`}>Pipeline</p></Reveal>
               <h2 className={styles.pipelineTitle}>
                 <RevealLines lines={["From data", "to prediction."]} />
               </h2>
@@ -243,30 +254,34 @@ export default function LandingPage() {
                 <a href="#validation" className={styles.pipelineLink}>See pipeline details <ArrowRight className="size-3.5" /></a>
               </Reveal>
               <div className={styles.pipelineBenchPhoto}>
-                <EditorialImage src="/marketing/lab.jpg" caption="Food science laboratory work" className="h-full w-full" imageClassName="object-cover" />
+                <EditorialImage
+                  src="/marketing/microbes.jpg"
+                  caption="Microbial cultures used in food-science analysis"
+                  className="h-full w-full"
+                  imageClassName="object-cover"
+                />
               </div>
             </div>
 
-            <div className={styles.pipelineCanvas}>
-              <div className={styles.pipelinePortrait}>
-                <EditorialImage src="/marketing/lab.jpg" caption="Research laboratory" className="h-full w-full" imageClassName="object-cover" />
-              </div>
+            <div className={`${styles.pipelineCanvas} !min-h-[30rem] !pt-[2.2rem]`}>
               <div className={styles.pipelineTexture}>
                 <EditorialImage src="/marketing/cheeses.jpg" caption="Cheese texture" className="h-full w-full" imageClassName="object-cover" />
               </div>
-              <svg aria-hidden viewBox="0 0 860 150" preserveAspectRatio="none" className={styles.pipelineCurve}>
+
+              <svg aria-hidden viewBox="0 0 860 150" preserveAspectRatio="none" className={`${styles.pipelineCurve} !top-[1.2rem]`}>
                 <path d="M15 96 C120 124 150 54 244 80 S368 116 452 62 S605 48 690 78 S790 88 845 52" />
               </svg>
 
-              <div className={styles.pipelineStepsLiving}>
+              <div className="relative z-[2] grid grid-cols-5 gap-0 pt-[1.6rem]">
                 {PIPELINE.map((item, index) => (
                   <Reveal key={item.step} delay={index * 0.04} y={8}>
-                    <article className={styles.pipelineLivingStep}>
-                      {index === 1 && <PipelineMini index={index} />}
+                    <article className="flex min-h-[22rem] flex-col border-r border-[#ebe2e5] px-3 last:border-r-0">
                       <span className={styles.pipelineStepBadge}>{item.step}</span>
-                      <h3>{item.title}</h3>
-                      <p>{item.body}</p>
-                      {index !== 1 && <PipelineMini index={index} />}
+                      <div className="mb-4 flex h-[7.2rem] items-center justify-center">
+                        <PipelineMini index={index} />
+                      </div>
+                      <h3 className="m-0 text-[0.68rem] font-bold leading-[1.25] text-[#28292c]">{item.title}</h3>
+                      <p className="mt-2 text-[0.51rem] leading-[1.55] text-[#777a80]">{item.body}</p>
                     </article>
                   </Reveal>
                 ))}
@@ -288,12 +303,11 @@ export default function LandingPage() {
             </div>
 
             <div className={styles.explainCopy}>
-              <Reveal><p className={styles.kicker}>Explainability</p></Reveal>
-              <h2 className={styles.sectionTitle}><RevealLines lines={["A number is", "not an answer."]} /></h2>
+              <Reveal><p className={`${styles.kicker} ${SECTION_BADGE}`}>Explainability</p></Reveal>
+              <h2 className={styles.sectionTitle}><RevealLines lines={["Understand what", "shaped the result."]} /></h2>
               <Reveal delay={0.08}>
                 <p className={styles.sectionCopy}>
-                  Every prediction decomposes into the factors that drove it.
-                  Explainability stays visible beside the prediction instead of being buried in a technical page.
+                  Review the features that influenced a prediction and how strongly each one contributed.
                 </p>
               </Reveal>
               <Reveal delay={0.13}>
@@ -316,7 +330,7 @@ export default function LandingPage() {
           <div className={styles.container}>
             <div className={styles.researchGrid}>
               <div>
-                <Reveal><p className={styles.kicker}>Research</p></Reveal>
+                <Reveal><p className={`${styles.kicker} ${SECTION_BADGE}`}>Research</p></Reveal>
                 <h2 className={styles.sectionTitle}><RevealLines lines={["Built inside a", "food-science", "programme."]} /></h2>
                 <Reveal delay={0.08}>
                   <p className={styles.sectionCopy}>
@@ -341,8 +355,8 @@ export default function LandingPage() {
             </div>
 
             <div className={styles.teamHeadingWrap}>
-              <p className={styles.kicker}>Research team</p>
-              <h3>Three collaborators. Equal visual weight.</h3>
+              <p className={`${styles.kicker} ${SECTION_BADGE}`}>Research team</p>
+              <h3>Project collaborators</h3>
             </div>
 
             <div className={styles.teamGrid}>
@@ -368,11 +382,11 @@ export default function LandingPage() {
         <section id="validation" className={styles.validationStorySection}>
           <div className={styles.validationLeft}>
             <div className={styles.validationLeftInner}>
-              <Reveal><p className={styles.kicker}>Validation</p></Reveal>
-              <h2 className={styles.validationStoryTitle}><RevealLines lines={["Designed to show", "where it fails."]} /></h2>
+              <Reveal><p className={`${styles.kicker} ${SECTION_BADGE}`}>Validation</p></Reveal>
+              <h2 className={styles.validationStoryTitle}><RevealLines lines={["Review performance", "by data context."]} /></h2>
               <Reveal delay={0.08}>
                 <p className={styles.validationStoryBody}>
-                  We evaluate where the model performs well—and where it needs more data. Error is surfaced by cheese category.
+                  Validation views show where model performance differs across cheese categories and data contexts.
                 </p>
               </Reveal>
 
@@ -383,16 +397,16 @@ export default function LandingPage() {
                 <Reveal delay={0.08} y={8}>
                   <aside className={styles.validationStatus}>
                     <span className={styles.validationPulse}>↗</span>
-                    <strong>Current status</strong>
-                    <p>External literature validation: 21 published cases.</p>
+                    <strong>Validation view</strong>
+                    <p>Compare performance across cheese categories.</p>
                     <i />
-                    <p>Stronger agreement for soft cheeses; <b>substantial error for hard cheeses.</b></p>
+                    <p>Differences are shown directly rather than hidden behind one overall score.</p>
                   </aside>
                 </Reveal>
               </div>
             </div>
             <div className={styles.validationCrumbs} aria-hidden>
-              <EditorialImage src="/marketing/cheeses.jpg" caption="Cheese detail" className="h-full w-full" imageClassName="object-cover" />
+              <EditorialImage src="/marketing/cheese-cave.jpg" caption="Cheese maturation environment" className="h-full w-full" imageClassName="object-cover" />
             </div>
           </div>
 
@@ -401,7 +415,7 @@ export default function LandingPage() {
             <div className={styles.workspaceCtaContent}>
               <p className={styles.workspaceKicker}>Your workspace</p>
               <h2>Start modelling in your own workspace.</h2>
-              <p>Run predictions, compare treatments, classify efficacy and inspect trained models—on your terms.</p>
+              <p>Run predictions, compare treatments, classify efficacy and inspect trained models.</p>
               <div className={styles.workspaceActionsLiving}>
                 <Link href="/signup" className={styles.workspacePrimaryLiving}>Create an account <ArrowRight className="size-3.5" /></Link>
                 <Link href="/login" className={styles.workspaceSecondaryLiving}>Log in</Link>
