@@ -264,6 +264,248 @@ main #pipeline [class*="pipelineCanvas"] article p {
     padding-bottom: 4.8rem !important;
   }
 }
+
+/* Full-width research collaborator showcase. */
+main #research [class*="teamHeadingWrap"] {
+  position: relative !important;
+  left: 50% !important;
+  width: min(96vw, 1540px) !important;
+  min-height: 15rem !important;
+  margin-top: 5.2rem !important;
+  padding: 2.7rem 3.4rem !important;
+  overflow: hidden !important;
+  transform: translateX(-50%) !important;
+  border: 1px solid rgba(224,191,200,.72) !important;
+  border-radius: 30px !important;
+  background:
+    linear-gradient(90deg, rgba(255,252,253,.99) 0%, rgba(255,249,251,.96) 52%, rgba(255,251,252,.45) 74%, rgba(255,255,255,.08) 100%),
+    url('/marketing/cheeses.jpg') right 32% / 46% auto no-repeat !important;
+  box-shadow: 0 30px 80px -58px rgba(91,29,47,.36) !important;
+  isolation: isolate;
+}
+main #research [class*="teamHeadingWrap"]::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: 26%;
+  top: -44%;
+  width: 28rem;
+  height: 28rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 24%, rgba(174,47,78,.08) 25% 25.6%, transparent 26% 38%, rgba(174,47,78,.055) 39% 39.6%, transparent 40%),
+    radial-gradient(circle at 5px 5px, rgba(174,47,78,.13) 0 1.15px, transparent 1.4px);
+  background-size: auto, 24px 24px;
+  opacity: .72;
+  transform: rotate(-12deg);
+}
+main #research [class*="teamHeadingWrap"]::after {
+  content: "Experts in food science and machine learning working together on cheese shelf-life research, modelling and interpretation.";
+  position: relative;
+  display: block;
+  max-width: 49rem;
+  margin-top: 1.05rem;
+  color: #5f6065;
+  font-size: clamp(.86rem, 1.15vw, 1.05rem);
+  line-height: 1.58;
+}
+main #research [class*="teamHeadingWrap"] h3 {
+  position: relative !important;
+  z-index: 2 !important;
+  max-width: 13ch !important;
+  margin: .85rem 0 0 !important;
+  font-family: var(--font-display) !important;
+  color: #1f2023 !important;
+  font-size: clamp(3rem, 5.6vw, 5.3rem) !important;
+  font-weight: 520 !important;
+  letter-spacing: -.055em !important;
+  line-height: .94 !important;
+}
+main #research [class*="teamGrid"] {
+  position: relative !important;
+  left: 50% !important;
+  width: min(96vw, 1540px) !important;
+  transform: translateX(-50%) !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 1.25rem !important;
+  margin-top: 1.35rem !important;
+}
+main #research [class*="teamGrid"] > div {
+  min-width: 0;
+}
+main #research [class*="personCard"] {
+  position: relative !important;
+  display: block !important;
+  min-height: 34rem !important;
+  height: 100% !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  isolation: isolate;
+  border: 1px solid rgba(215,180,190,.88) !important;
+  border-radius: 28px !important;
+  background: #f8eef1 !important;
+  box-shadow: 0 30px 70px -48px rgba(70,29,42,.48) !important;
+  transition: transform .38s cubic-bezier(.2,.8,.2,1), box-shadow .38s ease, border-color .38s ease !important;
+}
+main #research [class*="personCard"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(42,12,22,.02) 0%, rgba(42,12,22,.03) 36%, rgba(35,11,19,.20) 62%, rgba(30,9,16,.62) 100%),
+    radial-gradient(circle at 90% 10%, rgba(255,255,255,.35), transparent 28%);
+}
+main #research [class*="personCard"]::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  inset: -35% -65% 45% 35%;
+  pointer-events: none;
+  background: linear-gradient(112deg, transparent 30%, rgba(255,255,255,.40) 49%, transparent 68%);
+  opacity: 0;
+  transform: translateX(-28%);
+  transition: opacity .35s ease, transform .72s cubic-bezier(.2,.8,.2,1);
+}
+main #research [class*="personCard"]:hover {
+  transform: translateY(-10px) scale(1.006) !important;
+  border-color: rgba(181,88,111,.78) !important;
+  box-shadow: 0 38px 86px -48px rgba(92,29,49,.58) !important;
+}
+main #research [class*="personCard"]:hover::after {
+  opacity: 1;
+  transform: translateX(62%);
+}
+main #research [class*="personPhoto"] {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  border-radius: 0 !important;
+  background: #eee7e9 !important;
+}
+main #research [class*="personPhoto"] img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center top !important;
+  filter: saturate(.92) contrast(1.02) !important;
+  transform: scale(1.005);
+  transition: transform .72s cubic-bezier(.2,.8,.2,1), filter .45s ease !important;
+}
+main #research [class*="personCard"]:hover [class*="personPhoto"] img {
+  transform: scale(1.055) !important;
+  filter: saturate(1.02) contrast(1.03) !important;
+}
+main #research [class*="personCard"] > div:last-child {
+  position: absolute !important;
+  z-index: 5 !important;
+  left: 1.25rem !important;
+  right: 1.25rem !important;
+  bottom: 1.25rem !important;
+  padding: 1.25rem 1.3rem 1.2rem !important;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.72) !important;
+  border-radius: 21px !important;
+  background: linear-gradient(135deg, rgba(255,255,255,.90), rgba(255,247,250,.79)) !important;
+  box-shadow: 0 18px 44px -28px rgba(36,10,20,.55) !important;
+  backdrop-filter: blur(18px) saturate(135%) !important;
+  transition: transform .38s cubic-bezier(.2,.8,.2,1), background .38s ease !important;
+}
+main #research [class*="personCard"]:hover > div:last-child {
+  transform: translateY(-4px);
+  background: linear-gradient(135deg, rgba(255,255,255,.95), rgba(255,244,248,.86)) !important;
+}
+main #research [class*="personRole"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: .46rem .72rem !important;
+  border: 1px solid rgba(197,119,139,.44) !important;
+  border-radius: 999px !important;
+  background: rgba(255,250,252,.84) !important;
+  color: #9c2342 !important;
+  font-size: .62rem !important;
+  font-weight: 780 !important;
+  letter-spacing: .09em !important;
+  text-transform: uppercase !important;
+}
+main #research [class*="personName"] {
+  margin: .78rem 0 0 !important;
+  font-family: var(--font-display) !important;
+  color: #241f21 !important;
+  font-size: clamp(1.9rem, 2.55vw, 2.8rem) !important;
+  font-weight: 520 !important;
+  letter-spacing: -.045em !important;
+  line-height: .96 !important;
+}
+main #research [class*="personAffiliation"] {
+  margin: .62rem 0 0 !important;
+  color: #9a2443 !important;
+  font-size: .74rem !important;
+  font-weight: 650 !important;
+  line-height: 1.4 !important;
+}
+main #research [class*="personBio"] {
+  max-width: 36rem !important;
+  margin: .72rem 0 0 !important;
+  color: #5e5d62 !important;
+  font-size: .78rem !important;
+  line-height: 1.58 !important;
+}
+main #research [class*="teamGrid"] > div:nth-child(1) [class*="personCard"] {
+  border-color: rgba(190,70,99,.70) !important;
+  background: #f6d8df !important;
+}
+main #research [class*="teamGrid"] > div:nth-child(2) [class*="personCard"] {
+  border-color: rgba(222,181,164,.86) !important;
+  background: #fbf0e9 !important;
+}
+main #research [class*="teamGrid"] > div:nth-child(3) [class*="personCard"] {
+  border-color: rgba(164,128,177,.72) !important;
+  background: #eee4f0 !important;
+}
+main #research [class*="teamGrid"] > div:nth-child(1) [class*="personCard"]::before {
+  background: linear-gradient(180deg, rgba(118,18,46,.03) 0%, rgba(93,13,36,.06) 38%, rgba(80,13,34,.30) 67%, rgba(63,9,27,.69) 100%) !important;
+}
+main #research [class*="teamGrid"] > div:nth-child(2) [class*="personCard"]::before {
+  background: linear-gradient(180deg, rgba(156,87,48,.01) 0%, rgba(132,72,37,.04) 40%, rgba(80,38,18,.20) 69%, rgba(55,27,17,.62) 100%) !important;
+}
+main #research [class*="teamGrid"] > div:nth-child(3) [class*="personCard"]::before {
+  background: linear-gradient(180deg, rgba(90,48,99,.02) 0%, rgba(77,39,87,.06) 38%, rgba(65,31,75,.27) 67%, rgba(42,21,49,.65) 100%) !important;
+}
+@media (max-width: 1080px) {
+  main #research [class*="teamGrid"] {
+    grid-template-columns: repeat(3, minmax(20rem, 1fr)) !important;
+    overflow-x: auto !important;
+    padding-bottom: 1rem !important;
+    scroll-snap-type: x proximity;
+  }
+  main #research [class*="teamGrid"] > div {
+    scroll-snap-align: start;
+  }
+}
+@media (max-width: 700px) {
+  main #research [class*="teamHeadingWrap"] {
+    width: calc(100vw - 1.4rem) !important;
+    min-height: 18rem !important;
+    padding: 2rem 1.35rem !important;
+    background:
+      linear-gradient(180deg, rgba(255,252,253,.97), rgba(255,248,250,.88)),
+      url('/marketing/cheeses.jpg') center bottom / cover no-repeat !important;
+  }
+  main #research [class*="teamGrid"] {
+    width: calc(100vw - 1.4rem) !important;
+    grid-template-columns: 1fr !important;
+    overflow: visible !important;
+  }
+  main #research [class*="personCard"] {
+    min-height: 31rem !important;
+  }
+}
 `;
 
 export function SiteHeader() {
