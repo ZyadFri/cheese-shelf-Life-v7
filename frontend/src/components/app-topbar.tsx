@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import {
   BookOpen,
+  Bot,
   ChevronRight,
   Database,
   FlaskConical,
@@ -37,6 +38,7 @@ const ROUTES: Record<string, { label: string; icon: typeof Home }> = {
   "/app/ingredients": { label: "Ingredient Efficacy", icon: Leaf },
   "/app/explainability": { label: "Explainability", icon: Lightbulb },
   "/app/how-it-works": { label: "How it works", icon: Sparkles },
+  "/app/project-guide": { label: "Project Guide", icon: Bot },
   "/app/references": { label: "References", icon: BookOpen },
   "/app/account": { label: "Account", icon: Home },
 };
