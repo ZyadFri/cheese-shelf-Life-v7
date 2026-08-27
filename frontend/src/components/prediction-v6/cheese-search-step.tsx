@@ -131,7 +131,6 @@ export function CheeseSearchStep({ catalog }: { catalog: CheeseCatalog }) {
               const entries = catalog[name];
               const image = IMAGES[name];
               const categories = [...new Set(entries.map((entry) => entry.cheeseCategory))];
-              const category = categories[0];
 
               return (
                 <motion.button
@@ -197,9 +196,9 @@ export function CheeseSearchStep({ catalog }: { catalog: CheeseCatalog }) {
               <span className="font-semibold text-[#7f1d3d]">{titleCase(disambiguating.name)}</span> appears in more than one category in the backend catalog. Choose the category that matches your product.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {disambiguating.entries.map((entry) => (
+              {disambiguating.entries.map((entry, index) => (
                 <button
-                  key={`${entry.cheeseCategory}-${entry.foodMatrix}`}
+                  key={`${entry.cheeseCategory}-${index}`}
                   type="button"
                   onClick={() => dispatch({ type: "selectCheese", baseCheeseName: disambiguating.name, entry })}
                   className="inline-flex items-center gap-2 rounded-[11px] border border-[#e5d7dc] bg-white px-4 py-2 text-xs font-semibold text-[#6f374a] transition-all hover:-translate-y-0.5 hover:border-[#cf9fae]"
