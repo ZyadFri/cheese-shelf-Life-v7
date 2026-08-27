@@ -13,9 +13,11 @@ export function LandingPipelinePolish() {
       main #pipeline [class*="pipelineStory"] {
         position: relative !important;
         display: block !important;
-        width: min(94vw, 1500px) !important;
+        width: min(calc(100vw - 72px), 1580px) !important;
         max-width: none !important;
-        padding: 0 0 4.5rem !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        padding: 0 0 3rem !important;
       }
 
       main #pipeline [class*="pipelineIntro"] {
@@ -25,7 +27,7 @@ export function LandingPipelinePolish() {
         gap: .6rem clamp(2rem, 6vw, 7rem) !important;
         min-height: 0 !important;
         padding: 0 !important;
-        margin-bottom: 1.3rem !important;
+        margin-bottom: 2rem !important;
         align-items: end !important;
       }
 
@@ -60,7 +62,7 @@ export function LandingPipelinePolish() {
       main #pipeline [class*="pipelineIntro"] > div:nth-of-type(3) {
         position: absolute !important;
         left: 0 !important;
-        bottom: -3.4rem !important;
+        bottom: -3.1rem !important;
         z-index: 5 !important;
       }
 
@@ -71,25 +73,30 @@ export function LandingPipelinePolish() {
         display: none !important;
       }
 
+      /* Important: transforms do not participate in normal document flow.
+         This explicit stage height reserves space for the lower staggered cards
+         so the following Explainability section can never overlap them. */
       main #pipeline [class*="pipelineCanvas"] {
         position: relative !important;
-        min-height: 44rem !important;
+        width: 100% !important;
+        min-height: 61rem !important;
         padding: 0 !important;
-        margin-top: 1.4rem !important;
+        margin-top: 2.5rem !important;
         isolation: isolate !important;
+        overflow: visible !important;
       }
 
-      /* The connector is decorative only; the cards remain the semantic structure. */
+      /* Decorative connector only; cards are the semantic structure. */
       main #pipeline [class*="pipelineCanvas"]::before {
         content: "";
         position: absolute;
         z-index: 0;
-        inset: 1.7rem 2.5% 3rem;
+        inset: 2rem 2.25% 10rem;
         pointer-events: none;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1500 620' preserveAspectRatio='none'%3E%3Cpath d='M230 250 C300 250 300 410 390 410 S530 205 610 205 S760 400 845 400 S965 140 1060 140 S1190 305 1270 155' fill='none' stroke='%23a51f42' stroke-width='2.2' stroke-linecap='round' stroke-dasharray='7 6' opacity='.88'/%3E%3Ccircle cx='230' cy='250' r='7' fill='%23fff9fb' stroke='%23a51f42' stroke-width='3'/%3E%3Ccircle cx='390' cy='410' r='7' fill='%23fff9fb' stroke='%23a51f42' stroke-width='3'/%3E%3Ccircle cx='610' cy='205' r='7' fill='%23fff9fb' stroke='%23a51f42' stroke-width='3'/%3E%3Ccircle cx='845' cy='400' r='7' fill='%23fff9fb' stroke='%23a51f42' stroke-width='3'/%3E%3Ccircle cx='1060' cy='140' r='7' fill='%23fff9fb' stroke='%23a51f42' stroke-width='3'/%3E%3C/svg%3E") !important;
         background-repeat: no-repeat !important;
-        background-position: center !important;
-        background-size: 100% 100% !important;
+        background-position: center top !important;
+        background-size: 100% 34rem !important;
         opacity: .82;
       }
 
@@ -98,8 +105,9 @@ export function LandingPipelinePolish() {
         z-index: 2 !important;
         display: grid !important;
         grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-        gap: clamp(.9rem, 1.45vw, 1.55rem) !important;
+        gap: clamp(1rem, 1.65vw, 1.8rem) !important;
         align-items: start !important;
+        width: 100% !important;
         padding: 0 !important;
         overflow: visible !important;
       }
@@ -110,10 +118,10 @@ export function LandingPipelinePolish() {
         transition: transform .34s cubic-bezier(.2,.8,.2,1) !important;
       }
 
-      main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(1) { transform: translateY(8.2rem) !important; }
-      main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(2) { transform: translateY(18rem) !important; }
-      main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(3) { transform: translateY(4.4rem) !important; }
-      main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(4) { transform: translateY(17.4rem) !important; }
+      main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(1) { transform: translateY(8.5rem) !important; }
+      main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(2) { transform: translateY(19rem) !important; }
+      main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(3) { transform: translateY(4.5rem) !important; }
+      main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(4) { transform: translateY(18rem) !important; }
       main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(5) { transform: translateY(0) !important; }
 
       main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:not(:last-child)::after {
@@ -164,8 +172,8 @@ export function LandingPipelinePolish() {
       main #pipeline [class*="pipelineCanvas"] article > div {
         order: 0 !important;
         width: 100% !important;
-        height: clamp(11rem, 15vw, 14rem) !important;
-        min-height: clamp(11rem, 15vw, 14rem) !important;
+        height: clamp(12.5rem, 15vw, 16rem) !important;
+        min-height: clamp(12.5rem, 15vw, 16rem) !important;
         margin: 0 !important;
         padding: 0 !important;
         overflow: hidden !important;
@@ -216,7 +224,7 @@ export function LandingPipelinePolish() {
         padding: 1.35rem 1.3rem 0 !important;
         font-family: var(--font-display) !important;
         color: #262226 !important;
-        font-size: clamp(1.28rem, 1.55vw, 1.65rem) !important;
+        font-size: clamp(1.22rem, 1.48vw, 1.58rem) !important;
         font-weight: 540 !important;
         line-height: 1.05 !important;
         letter-spacing: -.035em !important;
@@ -232,20 +240,43 @@ export function LandingPipelinePolish() {
 
       main #pipeline [class*="pipelineCanvas"] article p {
         order: 2 !important;
-        min-height: 6.6rem !important;
+        min-height: 7.2rem !important;
         margin: 0 !important;
-        padding: .85rem 1.3rem 1.35rem !important;
+        padding: .85rem 1.3rem 1.45rem !important;
         color: #6b6870 !important;
-        font-size: clamp(.72rem, .82vw, .86rem) !important;
+        font-size: clamp(.7rem, .78vw, .83rem) !important;
         line-height: 1.55 !important;
+      }
+
+      /* Hard separation: Explainability belongs to the next visual chapter. */
+      main #pipeline [class*="explainability"] {
+        position: relative !important;
+        clear: both !important;
+        margin-top: 0 !important;
+        padding-top: 5.5rem !important;
+        border-top: 1px solid rgba(228, 213, 218, .72) !important;
+      }
+
+      @media (max-width: 1360px) {
+        main #pipeline [class*="pipelineStory"] {
+          width: min(calc(100vw - 48px), 1280px) !important;
+        }
+        main #pipeline [class*="pipelineCanvas"] {
+          min-height: 54rem !important;
+        }
+        main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(1) { transform: translateY(6.5rem) !important; }
+        main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(2) { transform: translateY(14rem) !important; }
+        main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(3) { transform: translateY(3.25rem) !important; }
+        main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(4) { transform: translateY(13.2rem) !important; }
+        main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(5) { transform: translateY(0) !important; }
       }
 
       @media (max-width: 1120px) {
         main #pipeline [class*="pipelineCanvas"] {
-          min-height: 36rem !important;
+          min-height: 32rem !important;
           overflow-x: auto !important;
           overflow-y: hidden !important;
-          padding-bottom: 1rem !important;
+          padding: 1rem 0 2rem !important;
         }
         main #pipeline [class*="pipelineCanvas"]::before { display: none !important; }
         main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) {
@@ -253,14 +284,20 @@ export function LandingPipelinePolish() {
           width: max-content !important;
           min-width: 100% !important;
           gap: 1rem !important;
-          padding: 1rem 0 4rem !important;
+          padding: 0 0 1rem !important;
         }
         main #pipeline [class*="pipelineCanvas"] > div:nth-of-type(2) > div:nth-child(n) {
           transform: translateY(0) !important;
         }
+        main #pipeline [class*="explainability"] {
+          padding-top: 4rem !important;
+        }
       }
 
       @media (max-width: 760px) {
+        main #pipeline [class*="pipelineStory"] {
+          width: calc(100vw - 28px) !important;
+        }
         main #pipeline [class*="pipelineIntro"] {
           grid-template-columns: 1fr !important;
           margin-bottom: 3rem !important;
