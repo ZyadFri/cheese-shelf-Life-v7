@@ -7,7 +7,7 @@ export default async function PredictionPage() {
   const { catalog } = await api.cheeseCatalog();
 
   return (
-    <PageBody>
+    <PageBody className="relative isolate max-w-[1480px] overflow-hidden px-4 pb-24 pt-0 sm:px-5 lg:px-7">
       <PredictionV6StoreProvider>
         <PredictionV6Flow catalog={catalog} />
       </PredictionV6StoreProvider>
