@@ -2,17 +2,8 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import {
   ArrowRight,
-  BookOpen,
-  Boxes,
   Check,
-  Database,
-  FlaskConical,
-  Layers,
-  ListOrdered,
   Lock,
-  MessageCircle,
-  ShieldCheck,
-  Users,
 } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -26,6 +17,7 @@ import {
   HeroProductPreview,
 } from "@/components/marketing/previews";
 import { TiltCard } from "@/components/marketing/landing-interactions";
+import { CapabilityStage } from "@/components/marketing/capability-stage";
 import styles from "./landing.module.css";
 
 const TEAM = [
@@ -52,39 +44,6 @@ const TEAM = [
     affiliation: "Université du Québec à Rimouski",
     bio: "Guided model selection, helped choose the most relevant plots, and contributed to the machine-learning strategy.",
     photo: "/marketing/benabbou.jpg",
-  },
-];
-
-const CAPABILITIES = [
-  {
-    title: "Predict from formulation",
-    body: "Matrix chemistry, storage, packaging and context routed to the right specialist.",
-    icon: FlaskConical,
-  },
-  {
-    title: "Compare against a control",
-    body: "Score candidate treatments beside an untreated control and quantify relative gain.",
-    icon: Layers,
-  },
-  {
-    title: "Classify efficacy",
-    body: "Low, Medium and High shelf-life-improvement tiers with explanation.",
-    icon: ShieldCheck,
-  },
-  {
-    title: "Rank ingredients",
-    body: "Context-adjusted ingredient effects with data-support visibility.",
-    icon: ListOrdered,
-  },
-  {
-    title: "Explain any prediction",
-    body: "See which features pushed a result up or down, not just the final number.",
-    icon: MessageCircle,
-  },
-  {
-    title: "Leakage-safe by design",
-    body: "Grouped context splitting keeps matched formulations together across partitions.",
-    icon: Lock,
   },
 ];
 
@@ -116,146 +75,11 @@ const PIPELINE = [
   },
 ];
 
-const STATS = [
-  {
-    value: "34k",
-    label: "Rows",
-    sublabel: "Curated & validated",
-    icon: Database,
-  },
-  {
-    value: "8.5k",
-    label: "Formulation contexts",
-    sublabel: "Modeled",
-    icon: Boxes,
-  },
-  {
-    value: "21",
-    label: "Published cases",
-    sublabel: "Integrated",
-    icon: BookOpen,
-  },
-  {
-    value: "6",
-    label: "Specialist models",
-    sublabel: "Routed by context",
-    icon: Users,
-  },
-];
-
 const RESEARCH_IMAGES = [
   { src: "/marketing/campus.jpg", label: "Macdonald Campus" },
   { src: "/marketing/lab.jpg", label: "Controlled studies" },
   { src: "/marketing/cheese-aging.jpg", label: "Real cheese matrices" },
 ];
-
-function CapabilityMini({ index }: { index: number }) {
-  if (index === 0) {
-    return (
-      <svg aria-hidden viewBox="0 0 120 32" className={styles.capabilitySparkline}>
-        <path d="M4 24 C18 22 24 18 35 20 S53 24 66 17 S84 19 99 9 S110 8 116 4" />
-        {[4, 35, 66, 99, 116].map((cx, i) => (
-          <circle key={cx} cx={cx} cy={[24, 20, 17, 9, 4][i]} r="2.4" />
-        ))}
-      </svg>
-    );
-  }
-
-  if (index === 1) {
-    return (
-      <div className={styles.compareMini} aria-hidden>
-        <span>Your formula</span><i className={styles.compareBarStrong} /><b>+18%</b>
-        <span>Control</span><i className={styles.compareBarQuiet} /><b>0%</b>
-      </div>
-    );
-  }
-
-  if (index === 2) {
-    return (
-      <div className={styles.tierMini} aria-hidden>
-        <span>Low</span><span>Medium</span><span className={styles.tierActive}>High</span>
-      </div>
-    );
-  }
-
-  if (index === 3) {
-    return (
-      <div className={styles.rankMini} aria-hidden>
-        <span>Salt</span><i style={{ "--w": "86%" } as CSSProperties} /><b>.72</b>
-        <span>Ripening</span><i style={{ "--w": "61%" } as CSSProperties} /><b>.48</b>
-        <span>Water activity</span><i style={{ "--w": "39%" } as CSSProperties} /><b>.31</b>
-      </div>
-    );
-  }
-
-  if (index === 4) {
-    return (
-      <svg aria-hidden viewBox="0 0 120 34" className={styles.explainMini}>
-        <path d="M4 18 20 24 34 15 48 17 64 13 80 20 96 12 116 8" />
-        {[4, 20, 34, 48, 64, 80, 96, 116].map((cx, i) => (
-          <circle key={cx} cx={cx} cy={[18, 24, 15, 17, 13, 20, 12, 8][i]} r="2.5" />
-        ))}
-      </svg>
-    );
-  }
-
-  return (
-    <div className={styles.partitionMini} aria-hidden>
-      {Array.from({ length: 12 }).map((_, i) => <span key={i} className={i === 2 || i === 7 || i === 11 ? styles.partitionHot : ""} />)}
-    </div>
-  );
-}
-
-function CapabilityStage() {
-  return (
-    <div className={styles.capabilityStage}>
-      <div className={styles.capabilityPhoto}>
-        <EditorialImage
-          src="/marketing/cheese-aging.jpg"
-          caption="Aged cheese wheels"
-          className="h-full w-full"
-          imageClassName="object-cover"
-        />
-        <div className={styles.capabilityPhotoWash} />
-        <div className={styles.capabilityBrand}>
-          <span className={styles.capabilityBrandMark}>S</span>
-          <strong>Shelf-Life<br />Studio</strong>
-        </div>
-      </div>
-
-      <svg aria-hidden viewBox="0 0 760 560" preserveAspectRatio="none" className={styles.capabilityConnectors}>
-        <path d="M286 96 C340 96 322 166 370 182" />
-        <path d="M258 265 C316 265 330 257 373 252" />
-        <path d="M310 474 C350 474 337 414 386 395" />
-        <path d="M640 110 C580 110 597 176 538 192" />
-        <path d="M662 292 C604 292 594 276 548 270" />
-        <path d="M625 466 C566 466 580 415 530 392" />
-      </svg>
-
-      {CAPABILITIES.map((item, index) => {
-        const Icon = item.icon;
-        return (
-          <Reveal
-            key={item.title}
-            delay={index * 0.035}
-            y={10}
-            className={`${styles.capabilityCard} ${styles[`capability${index + 1}`]}`}
-          >
-            <article className={styles.capabilityCardInner}>
-              <div className={styles.capabilityCardTop}>
-                <span className={styles.capabilityIcon}><Icon className="size-4" strokeWidth={1.7} /></span>
-                <span className={styles.capabilityNumber}>{index + 1}</span>
-                <h3>{item.title}</h3>
-              </div>
-              <p>{item.body}</p>
-              <CapabilityMini index={index} />
-            </article>
-          </Reveal>
-        );
-      })}
-    </div>
-  );
-}
 
 function PipelineMini({ index }: { index: number }) {
   if (index === 0) {
@@ -329,17 +153,22 @@ export default function LandingPage() {
           <div className={`${styles.container} ${styles.heroGrid}`}>
             <div className={styles.heroCopy}>
               <Reveal immediate>
-                <p className={styles.eyebrow}>Predict. Understand. Extend.</p>
+                <p className={styles.eyebrow}>Cheese shelf-life modelling</p>
               </Reveal>
 
               <h1 className={styles.heroTitle}>
-                <RevealLines immediate lines={["Shelf-life modelling", "with evidence."]} />
+                <RevealLines immediate lines={["Cheese Shelf-Life", "Prediction & Analysis"]} />
               </h1>
 
               <Reveal immediate delay={0.16}>
                 <p className={styles.heroLede}>
-                  Shelf-Life Studio predicts and explains how food behaves over time.
-                  Powered by food-science research and built for transparency.
+                  Shelf-Life Studio is a research platform for estimating and interpreting cheese shelf life across different products, formulations, storage conditions, and quality or safety indicators.
+                </p>
+              </Reveal>
+
+              <Reveal immediate delay={0.19}>
+                <p className="mt-4 max-w-[48ch] text-[0.78rem] leading-5 text-[#7b626b]">
+                  <strong className="font-semibold text-[#6f263d]">Developed by the Department of Food Science and Agricultural Chemistry.</strong>
                 </p>
               </Reveal>
 
@@ -362,23 +191,6 @@ export default function LandingPage() {
               </TiltCard>
             </Reveal>
           </div>
-
-          <Reveal immediate delay={0.28}>
-            <div className={`${styles.container} ${styles.statsStrip}`}>
-              {STATS.map((stat) => (
-                <div key={stat.label} className={styles.statItem}>
-                  <span className={styles.statIcon}>
-                    <stat.icon className="size-[17px]" strokeWidth={1.7} />
-                  </span>
-                  <div>
-                    <strong className={styles.statValue}>{stat.value}</strong>
-                    <span className={styles.statLabel}>{stat.label}</span>
-                    <span className={styles.statSublabel}>{stat.sublabel}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Reveal>
         </section>
 
         <section id="platform" className={`${styles.section} ${styles.platformSection}`}>
