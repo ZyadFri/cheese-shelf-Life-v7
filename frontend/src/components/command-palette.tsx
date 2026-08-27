@@ -26,8 +26,7 @@ import {
 
 const PAGES = [
   { href: "/app", label: "Home", icon: Home },
-  { href: "/app/synthetic", label: "Synthetic dataset workspace", icon: Database },
-  { href: "/app/real", label: "Real dataset workspace", icon: Database },
+  { href: "/app/data", label: "Data workspace", icon: Database },
   { href: "/app/modeling", label: "Modeling", icon: GitBranch },
   { href: "/app/prediction", label: "Prediction", icon: Beaker },
   { href: "/app/results", label: "Results", icon: ListOrdered },
