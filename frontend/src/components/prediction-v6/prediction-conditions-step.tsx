@@ -113,13 +113,14 @@ export function PredictionConditionsStep() {
     (!state.treatment.treatmentType || !state.treatment.applicationMethod || state.treatment.concentration === null || !state.treatment.concentrationUnit);
 
   const requiredMissing =
-    !indicatorTaskMap || state.storageTemperatureC === null || !state.packagingType || !state.indicatorGroup || !state.indicatorType || !state.indicatorUnit ||
-    state.indicatorThreshold === null || state.initialIndicatorValue === null || treatmentMissing;
+    !indicatorTaskMap || state.storageTemperatureC === null || !state.packagingType || state.pasteurizationApplied === null ||
+    !state.indicatorGroup || !state.indicatorType || !state.indicatorUnit || state.indicatorThreshold === null || state.initialIndicatorValue === null || treatmentMissing;
 
   async function handleSubmit() {
     if (requiredMissing || submitting || !entry) return;
     const primaryConcentration = state.treatment.ingredientName === "none" ? 0 : state.treatment.concentration;
-    if (primaryConcentration === null) return;
+    const pasteurizationApplied = state.pasteurizationApplied;
+    if (primaryConcentration === null || pasteurizationApplied === null) return;
 
     setSubmitting(true);
     try {
@@ -133,7 +134,7 @@ export function PredictionConditionsStep() {
         indicator_unit: state.indicatorUnit,
         indicator_threshold: state.indicatorThreshold,
         initial_indicator_value: state.initialIndicatorValue,
-        pasteurization_applied: state.pasteurizationApplied ? 1 : 0,
+        pasteurization_applied: pasteurizationApplied ? 1 : 0,
         headspace_oxygen_pct: state.headspaceOxygenPct,
         headspace_co2_pct: state.headspaceCo2Pct,
         headspace_n2_pct: state.headspaceN2Pct,
@@ -192,8 +193,8 @@ export function PredictionConditionsStep() {
                 </Field>
               );
             })}
-            <Field label="Pasteurization applied">
-              <Select value={state.pasteurizationApplied ? "1" : "0"} onValueChange={(value) => dispatch({ type: "setCondition", patch: { pasteurizationApplied: value === "1" } })}>
+            <Field label="Pasteurization applied" required>
+              <Select value={state.pasteurizationApplied === null ? "" : state.pasteurizationApplied ? "1" : "0"} onValueChange={(value) => dispatch({ type: "setCondition", patch: { pasteurizationApplied: value === "1" } })}>
                 <SelectTrigger className={`w-full ${controlClass}`}><PrettyValue map={{ "1": "Yes", "0": "No" }} /></SelectTrigger>
                 <SelectContent><SelectItem value="1">Yes</SelectItem><SelectItem value="0">No</SelectItem></SelectContent>
               </Select>
