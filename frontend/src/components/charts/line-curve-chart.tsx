@@ -6,9 +6,11 @@ import { CHART_AXIS_TICK, CHART_LEGEND_STYLE, CHART_TOOLTIP_LABEL_STYLE, CHART_T
 export function LineCurveChart({
   series,
   xLabel,
+  height = 240,
 }: {
   series: { name: string; color: string; points: number[] }[];
   xLabel?: string;
+  height?: number;
 }) {
   const length = Math.max(...series.map((s) => s.points.length));
   const data = Array.from({ length }, (_, i) => {
@@ -17,8 +19,8 @@ export function LineCurveChart({
     return row;
   });
   return (
-    <ResponsiveContainer width="100%" height={240}>
-      <LineChart data={data} margin={{ top: 4, right: 16, left: -8, bottom: xLabel ? 16 : 0 }}>
+    <ResponsiveContainer width="100%" height={height}>
+      <LineChart data={data} margin={{ top: 4, right: 12, left: -10, bottom: xLabel ? 16 : 0 }}>
         <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
         <XAxis
           dataKey="x"
