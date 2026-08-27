@@ -50,28 +50,28 @@ const TEAM = [
 const PIPELINE = [
   {
     step: "01",
-    title: "Load V7 data",
-    body: "Soft, semi-hard and hard corrected specialist files.",
+    title: "Prepare the data",
+    body: "Load the cheese data and prepare the information used by the models.",
   },
   {
     step: "02",
     title: "Split by context",
-    body: "Matched formulation/control rows stay together.",
+    body: "Keep related control and treatment samples together when the data is split.",
   },
   {
     step: "03",
-    title: "Route specialist",
-    body: "Category × endpoint model routing.",
+    title: "Select the model",
+    body: "Use the cheese category and prediction endpoint to choose the appropriate model.",
   },
   {
     step: "04",
-    title: "Train families",
-    body: "RF, LightGBM, XGBoost and EBM.",
+    title: "Train the models",
+    body: "Train the supported model families on the prepared training data.",
   },
   {
     step: "05",
-    title: "Validate & serve",
-    body: "Select on validation, then load saved artifacts.",
+    title: "Validate and predict",
+    body: "Check the model on held-out data, then use the saved model to make predictions.",
   },
 ];
 
@@ -86,7 +86,19 @@ function PipelineMini({ index }: { index: number }) {
     return <div className={`${styles.pipelineDots} ${styles.pipelineDotsCloud}`} aria-hidden />;
   }
   if (index === 1) {
-    return <div className={`${styles.pipelineDots} ${styles.pipelineDotsSplit}`} aria-hidden />;
+    return (
+      <div className="mb-4 overflow-hidden rounded-[14px] border border-[#eadde1] bg-white shadow-[0_12px_28px_-22px_rgba(76,31,43,.35)]">
+        <EditorialImage
+          src="/marketing/lab.jpg"
+          caption="Matched control and treatment samples in a food science laboratory"
+          className="h-[88px] w-full"
+          imageClassName="object-cover object-center"
+        />
+        <p className="!m-0 border-t border-[#efe5e8] bg-[#fffafb] px-2.5 py-2 text-[0.46rem] !leading-[1.35] text-[#806f75]">
+          Related control and treatment samples stay in the same group.
+        </p>
+      </div>
+    );
   }
   if (index === 2) {
     return (
@@ -220,11 +232,11 @@ export default function LandingPage() {
             <div className={styles.pipelineIntro}>
               <Reveal><p className={styles.kicker}>Pipeline</p></Reveal>
               <h2 className={styles.pipelineTitle}>
-                <RevealLines lines={["From raw data", "to served", "prediction."]} />
+                <RevealLines lines={["From data", "to prediction."]} />
               </h2>
               <Reveal delay={0.08}>
                 <p className={styles.pipelineCopy}>
-                  A deliberate, inspectable sequence. Nothing retrains at request time.
+                  See how the input data moves through each stage of the modelling pipeline before producing a shelf-life estimate.
                 </p>
               </Reveal>
               <Reveal delay={0.12}>
@@ -250,17 +262,18 @@ export default function LandingPage() {
                 {PIPELINE.map((item, index) => (
                   <Reveal key={item.step} delay={index * 0.04} y={8}>
                     <article className={styles.pipelineLivingStep}>
+                      {index === 1 && <PipelineMini index={index} />}
                       <span className={styles.pipelineStepBadge}>{item.step}</span>
                       <h3>{item.title}</h3>
                       <p>{item.body}</p>
-                      <PipelineMini index={index} />
+                      {index !== 1 && <PipelineMini index={index} />}
                     </article>
                   </Reveal>
                 ))}
               </div>
 
               <div className={styles.pipelineAxis}>
-                <span>Raw data</span><i /><b>› › ›</b><i /><span>Served prediction</span>
+                <span>Input data</span><i /><b>› › ›</b><i /><span>Shelf-life estimate</span>
               </div>
             </div>
           </div>
