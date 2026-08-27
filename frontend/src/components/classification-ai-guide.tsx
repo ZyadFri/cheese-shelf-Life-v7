@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowUpRight,
   Bot,
@@ -33,21 +33,19 @@ type GuideMessage = {
   error?: boolean;
 };
 
+const INTRO =
+  "Hi, I’m Shelf-Life AI. I can explain why this Classification workspace exists, how it differs from Prediction, and when each tool is the better choice.";
+
 const QUICK_QUESTIONS = [
   "How is classification different from prediction?",
   "Why is classification special?",
   "What do Low, Medium and High mean?",
-  "When should I use classification?",
 ];
 
 export function ClassificationAIGuide({ context }: { context: GuideContext }) {
   const reduce = useReducedMotion();
   const [messages, setMessages] = React.useState<GuideMessage[]>([
-    {
-      role: "assistant",
-      content:
-        "Hi, I’m Shelf-Life AI. I can explain why this Classification workspace exists, how it differs from Prediction, and when each tool is the better choice.",
-    },
+    { role: "assistant", content: INTRO },
   ]);
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -56,7 +54,10 @@ export function ClassificationAIGuide({ context }: { context: GuideContext }) {
   const transcriptRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    transcriptRef.current?.scrollTo({ top: transcriptRef.current.scrollHeight, behavior: reduce ? "auto" : "smooth" });
+    transcriptRef.current?.scrollTo({
+      top: transcriptRef.current.scrollHeight,
+      behavior: reduce ? "auto" : "smooth",
+    });
   }, [messages, loading, reduce]);
 
   React.useEffect(() => {
@@ -96,17 +97,17 @@ export function ClassificationAIGuide({ context }: { context: GuideContext }) {
     setLoading(true);
 
     try {
-      const history: AssistantChatMessage[] = nextMessages.map((message) => ({
-        role: message.role,
-        content: message.content,
-      }));
+      const history: AssistantChatMessage[] = nextMessages
+        .slice(1)
+        .map((message) => ({ role: message.role, content: message.content }));
 
       const response = await api.assistantChat({
         messages: history,
         page_context: {
           current_page: "/app/classification",
           assistant_surface: "classification_embedded_guide",
-          response_style: "Explain clearly in 2 to 5 concise sentences. Focus on the distinction between formulation efficacy classification and numerical shelf-life prediction. Never invent metrics or scientific values.",
+          response_style:
+            "Explain clearly in 2 to 5 concise sentences. Focus on the distinction between formulation efficacy classification and numerical shelf-life prediction. Never invent metrics or scientific values.",
           classification_context: {
             class_names: context.classNames,
             thresholds_pct: {
@@ -125,8 +126,10 @@ export function ClassificationAIGuide({ context }: { context: GuideContext }) {
         },
       });
 
-      const assistantMessage: GuideMessage = { role: "assistant", content: response.reply };
-      setMessages((previous) => [...previous, assistantMessage]);
+      setMessages((previous) => [
+        ...previous,
+        { role: "assistant", content: response.reply },
+      ]);
       if (voiceEnabled) speak(response.reply);
     } catch (error) {
       setMessages((previous) => [
@@ -145,7 +148,9 @@ export function ClassificationAIGuide({ context }: { context: GuideContext }) {
     }
   }
 
-  const latestAssistant = [...messages].reverse().find((message) => message.role === "assistant" && !message.error);
+  const latestAssistant = [...messages]
+    .reverse()
+    .find((message) => message.role === "assistant" && !message.error);
   const classLabel = context.classNames.join(" / ");
 
   return (
@@ -178,14 +183,21 @@ export function ClassificationAIGuide({ context }: { context: GuideContext }) {
                   stopSpeaking();
                   return;
                 }
-                setVoiceEnabled((value) => !value);
-                if (!voiceEnabled && latestAssistant) speak(latestAssistant.content);
+                const next = !voiceEnabled;
+                setVoiceEnabled(next);
+                if (next && latestAssistant) speak(latestAssistant.content);
               }}
               className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[#e7d5db] bg-white/80 text-[#8b2945] transition-colors hover:bg-white"
               aria-label={speaking ? "Stop speaking" : voiceEnabled ? "Disable spoken answers" : "Enable spoken answers"}
               title={speaking ? "Stop speaking" : voiceEnabled ? "Spoken answers on" : "Read answers aloud"}
             >
-              {speaking ? <Square className="size-3" fill="currentColor" /> : voiceEnabled ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />}
+              {speaking ? (
+                <Square className="size-3" fill="currentColor" />
+              ) : voiceEnabled ? (
+                <Volume2 className="size-3.5" />
+              ) : (
+                <VolumeX className="size-3.5" />
+              )}
             </button>
           </div>
 
@@ -224,7 +236,7 @@ export function ClassificationAIGuide({ context }: { context: GuideContext }) {
           </div>
 
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {QUICK_QUESTIONS.slice(0, 3).map((question) => (
+            {QUICK_QUESTIONS.map((question) => (
               <button
                 type="button"
                 key={question}
@@ -262,7 +274,7 @@ export function ClassificationAIGuide({ context }: { context: GuideContext }) {
           </form>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <ConceptCard
             eyebrow="Classification"
             title="Prioritize formulations"
@@ -312,14 +324,44 @@ function ConceptCard({
 }) {
   const primary = tone === "classification";
   return (
-    <div className={`relative overflow-hidden rounded-[18px] border p-4 ${primary ? "border-[#ebcfd7] bg-[linear-gradient(150deg,#fff,#fff4f7)]" : "border-[#dfe3ef] bg-[linear-gradient(150deg,#fff,#f7f8ff)]"}`}>
-      <div className={`mb-3 flex size-8 items-center justify-center rounded-full ${primary ? "bg-[#f7e1e8] text-[#9b2446]" : "bg-[#e9eefb] text-[#4569a4]"}`}>
+    <div
+      className={`relative overflow-hidden rounded-[18px] border p-4 ${
+        primary
+          ? "border-[#ebcfd7] bg-[linear-gradient(150deg,#fff,#fff4f7)]"
+          : "border-[#dfe3ef] bg-[linear-gradient(150deg,#fff,#f7f8ff)]"
+      }`}
+    >
+      <div
+        className={`mb-3 flex size-8 items-center justify-center rounded-full ${
+          primary ? "bg-[#f7e1e8] text-[#9b2446]" : "bg-[#e9eefb] text-[#4569a4]"
+        }`}
+      >
         {primary ? <Bot className="size-3.5" /> : <ArrowUpRight className="size-3.5" />}
       </div>
       <p className={`text-[9px] font-semibold uppercase tracking-[0.08em] ${primary ? "text-[#9a3a57]" : "text-[#5472a0]"}`}>{eyebrow}</p>
       <h3 className="mt-1 text-[14px] font-semibold tracking-[-0.02em] text-[#3f3036]">{title}</h3>
       <p className="mt-2 text-[10px] leading-[1.55] text-[#74636a]">{body}</p>
       <p className="mt-3 border-t border-black/5 pt-2 text-[9px] font-medium text-[#86727a]">{footer}</p>
+    </div>
+  );
+}
+
+function GuideAtmosphere() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute -left-16 top-8 size-64 rounded-full bg-[#f8dfe6]/55 blur-3xl" />
+      <div className="absolute right-10 top-[-80px] size-72 rounded-full bg-[#fff0e9]/75 blur-3xl" />
+      <div className="absolute bottom-[-110px] left-[44%] size-80 rounded-full bg-[#f8edf0]/75 blur-3xl" />
+      <svg className="absolute right-[-28px] top-2 h-[210px] w-[300px] opacity-[.16]" viewBox="0 0 300 210" fill="none">
+        <g stroke="#b84968" strokeWidth="1.1">
+          <circle cx="210" cy="38" r="7" /><circle cx="252" cy="72" r="6" /><circle cx="231" cy="121" r="8" /><circle cx="178" cy="93" r="6" /><circle cx="191" cy="163" r="5" />
+          <path d="m216 43 31 25m-42-24-23 44m2 10 42 20m5 10-36 31m57-81-17 37" />
+        </g>
+      </svg>
+      <svg className="absolute bottom-[-30px] left-[30%] h-[150px] w-[360px] opacity-[.10]" viewBox="0 0 360 150" fill="none">
+        <path d="M0 104c45-20 70-63 118-61 53 2 68 63 125 62 45-1 70-31 117-32" stroke="#a93d5c" />
+        <path d="M0 123c55-24 78-52 124-50 49 2 70 44 121 43 49-1 70-28 115-30" stroke="#c27489" />
+      </svg>
     </div>
   );
 }
@@ -334,21 +376,9 @@ function RobotGuide({ speaking }: { speaking: boolean }) {
     >
       <div className="absolute left-1/2 top-[12px] h-[74px] w-[108px] -translate-x-1/2 rounded-[44%_44%_40%_40%] border border-[#dfc4cc] bg-[linear-gradient(145deg,#fff,#f2e7ea)] shadow-[0_18px_28px_-20px_rgba(82,25,44,.65)]">
         <div className="absolute inset-x-[13px] top-[14px] h-[43px] rounded-[20px] border border-[#372a31] bg-[radial-gradient(circle_at_50%_30%,#3e2c35,#171319_72%)] shadow-inner">
-          <motion.span
-            animate={speaking ? { scaleY: [1, 0.55, 1] } : { opacity: [1, 0.72, 1] }}
-            transition={{ duration: speaking ? 0.35 : 2.5, repeat: Infinity }}
-            className="absolute left-[18px] top-[15px] h-[9px] w-[7px] rounded-full bg-[#ff86a6] shadow-[0_0_9px_#ff6d94]"
-          />
-          <motion.span
-            animate={speaking ? { scaleY: [1, 0.55, 1] } : { opacity: [1, 0.72, 1] }}
-            transition={{ duration: speaking ? 0.35 : 2.5, repeat: Infinity, delay: 0.08 }}
-            className="absolute right-[18px] top-[15px] h-[9px] w-[7px] rounded-full bg-[#ff86a6] shadow-[0_0_9px_#ff6d94]"
-          />
-          <motion.div
-            animate={speaking ? { width: [18, 25, 15, 22], borderRadius: [8, 4, 8, 5] } : { width: 20 }}
-            transition={{ duration: 0.45, repeat: speaking ? Infinity : 0 }}
-            className="absolute bottom-[8px] left-1/2 h-[3px] -translate-x-1/2 bg-[#ff89a7] shadow-[0_0_7px_#ff7299]"
-          />
+          <motion.span animate={speaking ? { scaleY: [1, 0.55, 1] } : { opacity: [1, 0.72, 1] }} transition={{ duration: speaking ? 0.35 : 2.5, repeat: Infinity }} className="absolute left-[18px] top-[15px] h-[9px] w-[7px] rounded-full bg-[#ff86a6] shadow-[0_0_9px_#ff6d94]" />
+          <motion.span animate={speaking ? { scaleY: [1, 0.55, 1] } : { opacity: [1, 0.72, 1] }} transition={{ duration: speaking ? 0.35 : 2.5, repeat: Infinity, delay: 0.08 }} className="absolute right-[18px] top-[15px] h-[9px] w-[7px] rounded-full bg-[#ff86a6] shadow-[0_0_9px_#ff6d94]" />
+          <motion.div animate={speaking ? { width: [18, 25, 15, 22] } : { width: 20 }} transition={{ duration: 0.45, repeat: speaking ? Infinity : 0 }} className="absolute bottom-[8px] left-1/2 h-[3px] -translate-x-1/2 rounded-full bg-[#ff89a7] shadow-[0_0_7px_#ff7299]" />
         </div>
         <div className="absolute -left-[10px] top-[22px] h-[31px] w-[15px] rounded-l-full border border-[#d7bcc5] bg-[#f6e9ed]" />
         <div className="absolute -right-[10px] top-[22px] h-[31px] w-[15px] rounded-r-full border border-[#d7bcc5] bg-[#f6e9ed]" />
@@ -361,32 +391,19 @@ function RobotGuide({ speaking }: { speaking: boolean }) {
         <div className="absolute left-1/2 top-[20px] flex h-[31px] w-[28px] -translate-x-1/2 items-center justify-center rounded-[8px] border border-[#ebd2d9] bg-white shadow-inner">
           <McGillShieldMark />
         </div>
-        <div className="absolute left-[13px] bottom-[13px] h-[8px] w-[28px] rounded-full bg-[#f5d7df]" />
-        <div className="absolute right-[13px] bottom-[13px] h-[8px] w-[28px] rounded-full bg-[#f5d7df]" />
+        <div className="absolute bottom-[13px] left-[13px] h-[8px] w-[28px] rounded-full bg-[#f5d7df]" />
+        <div className="absolute bottom-[13px] right-[13px] h-[8px] w-[28px] rounded-full bg-[#f5d7df]" />
       </div>
 
-      <motion.div
-        animate={speaking ? { rotate: [18, 5, 18] } : { rotate: [15, 10, 15] }}
-        transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute left-[9px] top-[94px] h-[18px] w-[57px] origin-right rounded-full border border-[#d9bdc6] bg-[linear-gradient(90deg,#f1e0e5,#fff)]"
-      >
+      <motion.div animate={speaking ? { rotate: [18, 5, 18] } : { rotate: [15, 10, 15] }} transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }} className="absolute left-[9px] top-[94px] h-[18px] w-[57px] origin-right rounded-full border border-[#d9bdc6] bg-[linear-gradient(90deg,#f1e0e5,#fff)]">
         <div className="absolute -left-[10px] -top-[2px] size-[21px] rounded-full border border-[#d9bdc6] bg-[#f7e9ed]" />
       </motion.div>
-
-      <motion.div
-        animate={speaking ? { rotate: [-35, -19, -35] } : { rotate: [-31, -25, -31] }}
-        transition={{ duration: 1.3, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute right-[5px] top-[93px] h-[18px] w-[60px] origin-left rounded-full border border-[#d9bdc6] bg-[linear-gradient(90deg,#fff,#f1e0e5)]"
-      >
+      <motion.div animate={speaking ? { rotate: [-35, -19, -35] } : { rotate: [-31, -25, -31] }} transition={{ duration: 1.3, repeat: Infinity, ease: "easeInOut" }} className="absolute right-[5px] top-[93px] h-[18px] w-[60px] origin-left rounded-full border border-[#d9bdc6] bg-[linear-gradient(90deg,#fff,#f1e0e5)]">
         <div className="absolute -right-[10px] -top-[2px] size-[21px] rounded-full border border-[#d9bdc6] bg-[#f7e9ed]" />
       </motion.div>
 
       <div className="absolute bottom-[2px] left-1/2 h-[16px] w-[124px] -translate-x-1/2 rounded-[50%] bg-[#dbaaba]/30 blur-[7px]" />
-      <motion.div
-        animate={{ scale: speaking ? [1, 1.05, 1] : [1, 1.025, 1] }}
-        transition={{ duration: speaking ? 0.75 : 2.8, repeat: Infinity }}
-        className="absolute left-1/2 top-[97px] size-[145px] -translate-x-1/2 rounded-full border border-[#e9ccd5]/65"
-      />
+      <motion.div animate={{ scale: speaking ? [1, 1.05, 1] : [1, 1.025, 1] }} transition={{ duration: speaking ? 0.75 : 2.8, repeat: Infinity }} className="absolute left-1/2 top-[97px] size-[145px] -translate-x-1/2 rounded-full border border-[#e9ccd5]/65" />
     </motion.div>
   );
 }
