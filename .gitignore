@@ -8,6 +8,9 @@ __pycache__/
 frontend/node_modules/
 frontend/.next/
 
+# App demo is kept once at repo root; frontend predev/prebuild copies it here.
+frontend/public/App_Demo.mp4
+
 # Trained model artifacts -- regenerable via train_models.py / train_specialists.py
 # against data/raw/*. Excluded because several individual files exceed GitHub's
 # 100MB hard per-file limit (e.g. artifacts/models/random_forest.joblib is ~375MB).
