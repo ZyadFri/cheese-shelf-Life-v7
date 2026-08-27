@@ -65,7 +65,7 @@ export function AppSidebar() {
       collapsible="offcanvas"
       className="border-r border-[#eee5e8] [&>[data-slot=sidebar-inner]]:bg-[linear-gradient(180deg,#fff_0%,#fffdfd_52%,#fffafa_100%)]"
     >
-      <SidebarHeader className="h-[76px] justify-center border-b border-[#f0e7ea] bg-white px-4 py-0">
+      <SidebarHeader className="h-16 justify-center border-b border-[#f0e7ea] bg-white px-4 py-0">
         <Link
           href="/app"
           className="flex h-full items-center rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b12046]"
@@ -74,7 +74,7 @@ export function AppSidebar() {
           <img
             src={MCGILL_LOGO}
             alt="McGill University"
-            className="h-[35px] w-auto max-w-[158px] object-contain"
+            className="h-8 w-auto max-w-[152px] object-contain"
           />
         </Link>
       </SidebarHeader>
