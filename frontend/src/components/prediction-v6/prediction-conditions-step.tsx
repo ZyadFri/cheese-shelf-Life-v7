@@ -45,6 +45,10 @@ function Field({ label, required, children }: { label: string; required?: boolea
   );
 }
 
+function nullableNumber(value: string): number | null {
+  return value.trim() === "" ? null : Number(value);
+}
+
 export function PredictionConditionsStep() {
   const { state, dispatch } = usePredictionV6();
   const [submitting, setSubmitting] = React.useState(false);
@@ -65,15 +69,14 @@ export function PredictionConditionsStep() {
   }, [entry.cheeseCategory]);
 
   function onIndicatorTypeChange(indicatorType: string) {
-    const task = indicatorTaskMap?.[indicatorType] ?? "general_shelf_life";
-    const schemaForTask = task === "safety_endpoint" && safetySchema ? safetySchema : generalSchema;
-    dispatch({
-      type: "selectEndpoint",
-      group: schemaForTask.categorical_modes.indicator_group ?? state.indicatorGroup ?? "",
-      indicatorType,
-      unit: schemaForTask.categorical_modes.indicator_unit ?? state.indicatorUnit ?? "",
-      task,
-    });
+    const task = indicatorTaskMap?.[indicatorType];
+    if (!task) return;
+    const schemaForTask = task === "safety_endpoint" ? safetySchema : generalSchema;
+    if (!schemaForTask) return;
+
+    const group = schemaForTask.categorical_modes.indicator_group ?? schemaForTask.categorical_options.indicator_group?.[0] ?? "";
+    const unit = schemaForTask.categorical_modes.indicator_unit ?? schemaForTask.categorical_options.indicator_unit?.[0] ?? "";
+    dispatch({ type: "selectEndpoint", group, indicatorType, unit, task });
   }
 
   function onIngredientChange(name: string) {
@@ -82,24 +85,42 @@ export function PredictionConditionsStep() {
       return;
     }
 
+    const treatmentType = activeSchema.categorical_options.treatment_type.find((value) => value !== "none") ?? activeSchema.categorical_modes.treatment_type ?? "";
+    const applicationMethod = activeSchema.categorical_options.application_method.find((value) => value !== "none") ?? activeSchema.categorical_modes.application_method ?? "";
+    const concentration = activeSchema.numeric_ranges.canonical_concentration_value?.median ?? null;
+    const concentrationUnit =
+      activeSchema.categorical_modes.canonical_concentration_unit ??
+      activeSchema.categorical_modes.primary_concentration_unit ??
+      activeSchema.categorical_options.canonical_concentration_unit?.find((value) => value !== "none") ??
+      activeSchema.categorical_options.primary_concentration_unit?.find((value) => value !== "none") ??
+      "";
+
     dispatch({
       type: "setTreatment",
       patch: {
         ingredientName: name,
-        treatmentType: activeSchema.categorical_options.treatment_type.find((value) => value !== "none") ?? "single_preservative",
-        applicationMethod: activeSchema.categorical_options.application_method.find((value) => value !== "none") ?? "surface_spray",
-        concentration: activeSchema.numeric_ranges.canonical_concentration_value?.median || 1,
-        concentrationUnit: "ppm",
+        ingredientFamily: null,
+        treatmentType,
+        applicationMethod,
+        concentration,
+        concentrationUnit,
       },
     });
   }
 
+  const treatmentMissing =
+    state.treatment.ingredientName !== "none" &&
+    (!state.treatment.treatmentType || !state.treatment.applicationMethod || state.treatment.concentration === null || !state.treatment.concentrationUnit);
+
   const requiredMissing =
-    state.storageTemperatureC === null || !state.packagingType || !state.indicatorGroup || !state.indicatorType || !state.indicatorUnit ||
-    state.indicatorThreshold === null || state.initialIndicatorValue === null;
+    !indicatorTaskMap || state.storageTemperatureC === null || !state.packagingType || !state.indicatorGroup || !state.indicatorType || !state.indicatorUnit ||
+    state.indicatorThreshold === null || state.initialIndicatorValue === null || treatmentMissing;
 
   async function handleSubmit() {
     if (requiredMissing || submitting || !entry) return;
+    const primaryConcentration = state.treatment.ingredientName === "none" ? 0 : state.treatment.concentration;
+    if (primaryConcentration === null) return;
+
     setSubmitting(true);
     try {
       const shared = {
@@ -128,7 +149,7 @@ export function PredictionConditionsStep() {
           treatment_type: state.treatment.treatmentType,
           application_method: state.treatment.applicationMethod,
           primary_ingredient_name: state.treatment.ingredientName,
-          primary_concentration: state.treatment.concentration,
+          primary_concentration: primaryConcentration,
           primary_concentration_unit: state.treatment.concentrationUnit,
           primary_ingredient_family: state.treatment.ingredientFamily,
         }],
@@ -158,16 +179,19 @@ export function PredictionConditionsStep() {
 
         <FormSection number={1} icon={<Thermometer className="size-4" />} title="Cheese composition" description="Auto-filled from backend category medians — adjust only when you know the product-specific value.">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {["matrix_ph", "matrix_water_activity", "matrix_moisture_pct", "matrix_fat_pct", "matrix_protein_pct", "matrix_salt_pct", "matrix_ripening_days"].map((column) => (
-              <Field key={column} label={column.replace("matrix_", "").replace(/_/g, " ")}>
-                <Input
-                  type="number"
-                  className={controlClass}
-                  value={Number(state.matrixValues[column] ?? 0)}
-                  onChange={(event) => dispatch({ type: "setCondition", patch: { matrixValues: { ...state.matrixValues, [column]: Number(event.target.value) } } })}
-                />
-              </Field>
-            ))}
+            {["matrix_ph", "matrix_water_activity", "matrix_moisture_pct", "matrix_fat_pct", "matrix_protein_pct", "matrix_salt_pct", "matrix_ripening_days"].map((column) => {
+              const currentValue = state.matrixValues[column];
+              return (
+                <Field key={column} label={column.replace("matrix_", "").replace(/_/g, " ")}>
+                  <Input
+                    type="number"
+                    className={controlClass}
+                    value={currentValue === null || currentValue === undefined ? "" : Number(currentValue)}
+                    onChange={(event) => dispatch({ type: "setCondition", patch: { matrixValues: { ...state.matrixValues, [column]: nullableNumber(event.target.value) } } })}
+                  />
+                </Field>
+              );
+            })}
             <Field label="Pasteurization applied">
               <Select value={state.pasteurizationApplied ? "1" : "0"} onValueChange={(value) => dispatch({ type: "setCondition", patch: { pasteurizationApplied: value === "1" } })}>
                 <SelectTrigger className={`w-full ${controlClass}`}><PrettyValue map={{ "1": "Yes", "0": "No" }} /></SelectTrigger>
@@ -180,7 +204,7 @@ export function PredictionConditionsStep() {
         <FormSection number={2} icon={<PackageOpen className="size-4" />} title="Storage & packaging" description="Define the environmental and package conditions used for the prediction.">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Storage temperature (°C)" required>
-              <Input type="number" className={controlClass} value={state.storageTemperatureC ?? 0} onChange={(event) => dispatch({ type: "setCondition", patch: { storageTemperatureC: Number(event.target.value) } })} />
+              <Input type="number" className={controlClass} value={state.storageTemperatureC ?? ""} onChange={(event) => dispatch({ type: "setCondition", patch: { storageTemperatureC: nullableNumber(event.target.value) } })} />
             </Field>
             <Field label="Packaging type" required>
               <Select value={state.packagingType ?? ""} onValueChange={(value) => value && dispatch({ type: "setCondition", patch: { packagingType: value } })}>
@@ -189,13 +213,13 @@ export function PredictionConditionsStep() {
               </Select>
             </Field>
             <Field label="Headspace O₂ (%)">
-              <Input type="number" className={controlClass} value={state.headspaceOxygenPct ?? 0} onChange={(event) => dispatch({ type: "setCondition", patch: { headspaceOxygenPct: Number(event.target.value) } })} />
+              <Input type="number" className={controlClass} value={state.headspaceOxygenPct ?? ""} onChange={(event) => dispatch({ type: "setCondition", patch: { headspaceOxygenPct: nullableNumber(event.target.value) } })} />
             </Field>
             <Field label="Headspace CO₂ (%)">
-              <Input type="number" className={controlClass} value={state.headspaceCo2Pct ?? 0} onChange={(event) => dispatch({ type: "setCondition", patch: { headspaceCo2Pct: Number(event.target.value) } })} />
+              <Input type="number" className={controlClass} value={state.headspaceCo2Pct ?? ""} onChange={(event) => dispatch({ type: "setCondition", patch: { headspaceCo2Pct: nullableNumber(event.target.value) } })} />
             </Field>
             <Field label="Headspace N₂ (%)">
-              <Input type="number" className={controlClass} value={state.headspaceN2Pct ?? 0} onChange={(event) => dispatch({ type: "setCondition", patch: { headspaceN2Pct: Number(event.target.value) } })} />
+              <Input type="number" className={controlClass} value={state.headspaceN2Pct ?? ""} onChange={(event) => dispatch({ type: "setCondition", patch: { headspaceN2Pct: nullableNumber(event.target.value) } })} />
             </Field>
           </div>
         </FormSection>
@@ -203,7 +227,7 @@ export function PredictionConditionsStep() {
         <FormSection number={3} icon={<Activity className="size-4" />} title="Prediction endpoint" description="Indicator routing is read from the backend specialist registry; safety indicators automatically switch to the safety-focused path.">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Indicator" required>
-              <Select value={state.indicatorType ?? ""} onValueChange={(value) => value && onIndicatorTypeChange(value)}>
+              <Select disabled={!indicatorTaskMap} value={state.indicatorType ?? ""} onValueChange={(value) => value && onIndicatorTypeChange(value)}>
                 <SelectTrigger className={`w-full ${controlClass}`}><PrettyValue /></SelectTrigger>
                 <SelectContent>
                   {generalSchema.categorical_options.indicator_type.map((option) => <SelectItem key={option} value={option}>{prettify(option)}</SelectItem>)}
@@ -226,10 +250,10 @@ export function PredictionConditionsStep() {
               </Select>
             </Field>
             <Field label={`Threshold (${state.indicatorUnit ?? ""})`} required>
-              <Input type="number" className={controlClass} value={state.indicatorThreshold ?? 0} onChange={(event) => dispatch({ type: "setCondition", patch: { indicatorThreshold: Number(event.target.value) } })} />
+              <Input type="number" className={controlClass} value={state.indicatorThreshold ?? ""} onChange={(event) => dispatch({ type: "setCondition", patch: { indicatorThreshold: nullableNumber(event.target.value) } })} />
             </Field>
             <Field label={`Initial value (${state.indicatorUnit ?? ""})`} required>
-              <Input type="number" className={controlClass} value={state.initialIndicatorValue ?? 0} onChange={(event) => dispatch({ type: "setCondition", patch: { initialIndicatorValue: Number(event.target.value) } })} />
+              <Input type="number" className={controlClass} value={state.initialIndicatorValue ?? ""} onChange={(event) => dispatch({ type: "setCondition", patch: { initialIndicatorValue: nullableNumber(event.target.value) } })} />
             </Field>
           </div>
 
@@ -280,8 +304,8 @@ export function PredictionConditionsStep() {
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                     <Field label="Concentration" required>
                       <div className="flex gap-2">
-                        <Input type="number" className={controlClass} value={state.treatment.concentration} onChange={(event) => dispatch({ type: "setTreatment", patch: { concentration: Number(event.target.value) } })} />
-                        <Input className={`w-24 ${controlClass}`} value={state.treatment.concentrationUnit} onChange={(event) => dispatch({ type: "setTreatment", patch: { concentrationUnit: event.target.value } })} placeholder="ppm" />
+                        <Input type="number" className={controlClass} value={state.treatment.concentration ?? ""} onChange={(event) => dispatch({ type: "setTreatment", patch: { concentration: nullableNumber(event.target.value) } })} />
+                        <Input className={`w-24 ${controlClass}`} value={state.treatment.concentrationUnit} onChange={(event) => dispatch({ type: "setTreatment", patch: { concentrationUnit: event.target.value } })} placeholder="unit" />
                       </div>
                     </Field>
                   </motion.div>
@@ -301,10 +325,10 @@ export function PredictionConditionsStep() {
 
           <div className="px-5 py-2">
             <SummaryRow label="Cheese" value={titleCase(baseCheeseName)} sub={`${entry.cheeseCategory.replace("_", "-")} · ${prettify(physicalForm)}`} />
-            <SummaryRow label="Storage" value={`${state.storageTemperatureC ?? "—"} °C`} />
+            <SummaryRow label="Storage" value={state.storageTemperatureC === null ? "—" : `${state.storageTemperatureC} °C`} />
             <SummaryRow label="Packaging" value={prettify(state.packagingType)} />
             <SummaryRow label="Endpoint" value={prettify(state.indicatorType)} />
-            <SummaryRow label="Treatment" value={state.treatment.ingredientName === "none" ? "None (baseline)" : `${prettify(state.treatment.ingredientName)} · ${state.treatment.concentration}${state.treatment.concentrationUnit}`} />
+            <SummaryRow label="Treatment" value={state.treatment.ingredientName === "none" ? "None (baseline)" : `${prettify(state.treatment.ingredientName)} · ${state.treatment.concentration ?? "—"}${state.treatment.concentrationUnit ? ` ${state.treatment.concentrationUnit}` : ""}`} />
           </div>
 
           {isSafety && <div className="mx-5 mb-2"><Badge variant="warning" size="sm">Safety-focused route</Badge></div>}
@@ -319,7 +343,7 @@ export function PredictionConditionsStep() {
               {submitting ? <Loader2 className="size-4 animate-spin" /> : <FlaskConical className="size-4" />}
               {submitting ? "Predicting…" : "Generate prediction"}
             </Button>
-            {requiredMissing && <p className="mt-2 text-center text-[0.48rem] text-[#b04763]">Complete every required field to enable prediction.</p>}
+            {requiredMissing && <p className="mt-2 text-center text-[0.48rem] text-[#b04763]">Waiting for backend routing and all required fields.</p>}
           </div>
         </div>
       </aside>
