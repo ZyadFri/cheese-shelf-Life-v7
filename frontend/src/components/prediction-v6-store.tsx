@@ -28,24 +28,16 @@ export const NO_TREATMENT: TreatmentState = {
 
 export interface PredictionV6State {
   step: FlowStep;
-
-  // Cheese identity
   baseCheeseName: string | null;
-  entry: CheeseCatalogEntry | null; // resolved (cheeseCategory + foodMatrix)
+  entry: CheeseCatalogEntry | null;
   cheeseCategory: CheeseCategory | null;
   foodMatrix: string | null;
-
-  // Physical presentation
   physicalForm: string | null;
-  physicalFormOption: PhysicalFormOption | null; // carries source/confidence/support
+  physicalFormOption: PhysicalFormOption | null;
   supportLevel: ResolvedSupport | null;
-
-  // Schemas for both tasks of the resolved category (fetched once category known)
   generalSchema: SchemaV6Data | null;
   safetySchema: SchemaV6Data | null;
   modelTask: ModelTask;
-
-  // Conditions
   storageTemperatureC: number | null;
   matrixValues: Record<string, unknown>;
   packagingType: string | null;
@@ -59,7 +51,6 @@ export interface PredictionV6State {
   indicatorThreshold: number | null;
   initialIndicatorValue: number | null;
   treatment: TreatmentState;
-
   result: PredictV6Result | null;
 }
 
@@ -109,11 +100,6 @@ function reducer(state: PredictionV6State, action: Action): PredictionV6State {
     case "goto":
       return { ...state, step: action.step };
     case "selectCheese":
-      // Changing the cheese invalidates everything downstream: physical form,
-      // schemas, conditions, treatment, result -- only the step advances.
-      // foodMatrix is not known yet at this point -- it lives on each
-      // physical-form option (see CheeseCatalogEntry doc), set once the user
-      // picks a form in the next step.
       return {
         ...initialState,
         step: "form",
@@ -131,28 +117,38 @@ function reducer(state: PredictionV6State, action: Action): PredictionV6State {
         supportLevel: action.option.support,
       };
     case "setSchemas": {
-      const g = action.general;
+      const schema = action.general;
+      const matrixColumns = [
+        "matrix_ph",
+        "matrix_water_activity",
+        "matrix_moisture_pct",
+        "matrix_fat_pct",
+        "matrix_protein_pct",
+        "matrix_salt_pct",
+        "matrix_ripening_days",
+      ];
+      const backendMatrixMedians = Object.fromEntries(
+        matrixColumns.flatMap((column) => {
+          const median = schema.numeric_ranges[column]?.median;
+          return median === undefined || median === null ? [] : [[column, median]];
+        }),
+      );
+
       return {
         ...state,
-        generalSchema: g,
+        generalSchema: schema,
         safetySchema: action.safety,
-        storageTemperatureC: state.storageTemperatureC ?? g.numeric_ranges.storage_temperature_c?.median ?? 4,
-        packagingType: state.packagingType ?? g.categorical_modes.packaging_type ?? g.categorical_options.packaging_type?.[0] ?? null,
-        headspaceOxygenPct: state.headspaceOxygenPct ?? g.numeric_ranges.headspace_oxygen_pct?.median ?? 0,
-        headspaceCo2Pct: state.headspaceCo2Pct ?? g.numeric_ranges.headspace_co2_pct?.median ?? 0,
-        headspaceN2Pct: state.headspaceN2Pct ?? g.numeric_ranges.headspace_n2_pct?.median ?? 0,
-        indicatorGroup: state.indicatorGroup ?? g.categorical_modes.indicator_group ?? null,
-        indicatorType: state.indicatorType ?? g.categorical_modes.indicator_type ?? null,
-        indicatorUnit: state.indicatorUnit ?? g.categorical_modes.indicator_unit ?? null,
-        indicatorThreshold: state.indicatorThreshold ?? g.numeric_ranges.indicator_threshold?.median ?? 0,
-        initialIndicatorValue: state.initialIndicatorValue ?? g.numeric_ranges.initial_indicator_value?.median ?? 0,
-        matrixValues:
-          Object.keys(state.matrixValues).length > 0
-            ? state.matrixValues
-            : Object.fromEntries(
-                ["matrix_ph", "matrix_water_activity", "matrix_moisture_pct", "matrix_fat_pct", "matrix_protein_pct", "matrix_salt_pct", "matrix_ripening_days"]
-                  .map((c) => [c, g.numeric_ranges[c]?.median ?? 0]),
-              ),
+        storageTemperatureC: state.storageTemperatureC ?? schema.numeric_ranges.storage_temperature_c?.median ?? null,
+        packagingType: state.packagingType ?? schema.categorical_modes.packaging_type ?? schema.categorical_options.packaging_type?.[0] ?? null,
+        headspaceOxygenPct: state.headspaceOxygenPct ?? schema.numeric_ranges.headspace_oxygen_pct?.median ?? null,
+        headspaceCo2Pct: state.headspaceCo2Pct ?? schema.numeric_ranges.headspace_co2_pct?.median ?? null,
+        headspaceN2Pct: state.headspaceN2Pct ?? schema.numeric_ranges.headspace_n2_pct?.median ?? null,
+        indicatorGroup: state.indicatorGroup ?? schema.categorical_modes.indicator_group ?? schema.categorical_options.indicator_group?.[0] ?? null,
+        indicatorType: state.indicatorType ?? schema.categorical_modes.indicator_type ?? schema.categorical_options.indicator_type?.[0] ?? null,
+        indicatorUnit: state.indicatorUnit ?? schema.categorical_modes.indicator_unit ?? schema.categorical_options.indicator_unit?.[0] ?? null,
+        indicatorThreshold: state.indicatorThreshold ?? schema.numeric_ranges.indicator_threshold?.median ?? null,
+        initialIndicatorValue: state.initialIndicatorValue ?? schema.numeric_ranges.initial_indicator_value?.median ?? null,
+        matrixValues: Object.keys(state.matrixValues).length > 0 ? state.matrixValues : backendMatrixMedians,
       };
     }
     case "setCondition":
@@ -194,7 +190,7 @@ export function PredictionV6StoreProvider({ children }: { children: React.ReactN
 }
 
 export function usePredictionV6() {
-  const ctx = React.useContext(PredictionV6Context);
-  if (!ctx) throw new Error("usePredictionV6 must be used within PredictionV6StoreProvider");
-  return ctx;
+  const context = React.useContext(PredictionV6Context);
+  if (!context) throw new Error("usePredictionV6 must be used within PredictionV6StoreProvider");
+  return context;
 }
