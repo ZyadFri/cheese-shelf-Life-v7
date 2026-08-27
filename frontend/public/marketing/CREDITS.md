@@ -1,7 +1,7 @@
 # Image credits
 
 Photographs sourced from Wikimedia Commons and used under the licences below.
-Files are downloaded and optimised by `scripts/fetch-marketing-images.py`.
+Files are downloaded and optimised by `scripts/fetch-marketing-images.py` unless otherwise noted.
 
 ## campus.jpg
 - Source: https://commons.wikimedia.org/wiki/File:Campus_Macdonald_01.jpg
@@ -12,10 +12,17 @@ Files are downloaded and optimised by `scripts/fetch-marketing-images.py`.
 - Source: https://commons.wikimedia.org/wiki/File:Microbiology_cabinet.jpg
 - Author: Luis Fernando Flores LAB
 - Licence: CC BY-SA 4.0
+
 ## cheese-aging.jpg
 - Source: https://commons.wikimedia.org/wiki/File:Affinage_Gruyere.jpg
 - Author: Walo von Mühlenen
 - Licence: CC BY-SA 2.0 de
+
+## pipeline control/treatment comparison image
+- Source: https://commons.wikimedia.org/wiki/File:Sterilization_effects_of_negative_air_ionization.jpg
+- Author: Ken Hammond, USDA
+- Licence: Public domain (work of a U.S. federal government employee)
+- Loaded directly from Wikimedia Commons on the landing-page pipeline to illustrate an untreated/treated sample pair.
 
 ## research-banner.png
 - Source: supplied directly by the project owner, sourced from McGill Macdonald Campus
@@ -69,4 +76,3 @@ https://www.mcgill.ca/newsroom/faculty-and-staff/socialmedia/directory (accessed
 2026-08-26). No account is linked that isn't listed there. The directory also lists
 Instagram and Flickr accounts, both omitted per the project owner's preference to keep
 the footer's social row to Facebook/X/LinkedIn/YouTube.
-
