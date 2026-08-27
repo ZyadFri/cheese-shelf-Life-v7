@@ -22,6 +22,184 @@ import styles from "./landing.module.css";
 const SECTION_BADGE =
   "inline-flex items-center rounded-full border border-[#e8c6d0]/80 bg-[linear-gradient(110deg,rgba(255,255,255,.96),rgba(248,224,231,.92),rgba(255,255,255,.96))] px-3 py-1.5 shadow-[0_12px_30px_-22px_rgba(155,28,60,.65)] backdrop-blur-sm";
 
+const LANDING_REFINEMENT = `
+/* Full-width landing navigation. */
+header:has(.shelf-nav-link) {
+  width: 100% !important;
+  padding: 10px 12px 0 !important;
+}
+header:has(.shelf-nav-link) > div {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Research-team refinement: compact editorial cards, not poster-size portraits. */
+main #research [class*="teamHeadingWrap"] {
+  width: min(92vw, 1280px) !important;
+  min-height: 10rem !important;
+  margin-top: 4.2rem !important;
+  padding: 2rem 2.4rem !important;
+  border-radius: 24px !important;
+  background:
+    linear-gradient(90deg, rgba(255,252,253,.99) 0%, rgba(255,249,251,.97) 58%, rgba(255,252,253,.72) 78%, rgba(255,255,255,.28) 100%),
+    url('/marketing/cheeses.jpg') right 40% / 34% auto no-repeat !important;
+  box-shadow: 0 24px 60px -50px rgba(91,29,47,.30) !important;
+}
+main #research [class*="teamHeadingWrap"]::before {
+  width: 20rem !important;
+  height: 20rem !important;
+  right: 22% !important;
+  top: -48% !important;
+  opacity: .48 !important;
+}
+main #research [class*="teamHeadingWrap"]::after {
+  max-width: 42rem !important;
+  margin-top: .72rem !important;
+  font-size: .82rem !important;
+  line-height: 1.5 !important;
+}
+main #research [class*="teamHeadingWrap"] h3 {
+  max-width: none !important;
+  margin-top: .65rem !important;
+  font-size: clamp(2.35rem, 4.2vw, 4rem) !important;
+  line-height: .98 !important;
+}
+main #research [class*="teamGrid"] {
+  width: min(92vw, 1280px) !important;
+  gap: 1rem !important;
+  margin-top: 1rem !important;
+  align-items: stretch !important;
+}
+main #research [class*="personCard"] {
+  display: grid !important;
+  grid-template-rows: 14.5rem auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 20px !important;
+  background: rgba(255,255,255,.96) !important;
+  box-shadow: 0 20px 48px -38px rgba(64,25,38,.34) !important;
+  transform: none !important;
+}
+main #research [class*="personCard"]::before,
+main #research [class*="personCard"]::after {
+  display: none !important;
+}
+main #research [class*="personCard"]:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: 0 26px 54px -34px rgba(84,29,47,.42) !important;
+}
+main #research [class*="personPhoto"] {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 1 !important;
+  width: 100% !important;
+  height: 14.5rem !important;
+  overflow: hidden !important;
+  border-radius: 0 !important;
+  background: #f4edef !important;
+}
+main #research [class*="personPhoto"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 34%;
+  background: linear-gradient(180deg, transparent, rgba(52,21,31,.10));
+  pointer-events: none;
+}
+main #research [class*="personPhoto"] img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center 18% !important;
+  transform: scale(1.01) !important;
+  filter: saturate(.94) contrast(1.015) !important;
+}
+main #research [class*="personCard"]:hover [class*="personPhoto"] img {
+  transform: scale(1.035) !important;
+}
+main #research [class*="personCard"] > div:last-child {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 2 !important;
+  display: flex !important;
+  min-height: 12rem !important;
+  flex-direction: column !important;
+  padding: 1rem 1.1rem 1.12rem !important;
+  border: 0 !important;
+  border-top: 1px solid rgba(231,218,222,.86) !important;
+  border-radius: 0 !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.99), rgba(255,249,251,.96)) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  transform: none !important;
+}
+main #research [class*="personCard"]:hover > div:last-child {
+  transform: none !important;
+  background: linear-gradient(180deg, #fff, #fff7fa) !important;
+}
+main #research [class*="personRole"] {
+  align-self: flex-start !important;
+  padding: .35rem .58rem !important;
+  font-size: .52rem !important;
+  letter-spacing: .075em !important;
+  background: #fff8fa !important;
+}
+main #research [class*="personName"] {
+  margin-top: .58rem !important;
+  font-size: clamp(1.45rem, 2vw, 1.9rem) !important;
+  line-height: 1 !important;
+}
+main #research [class*="personAffiliation"] {
+  margin-top: .42rem !important;
+  font-size: .66rem !important;
+}
+main #research [class*="personBio"] {
+  margin-top: .55rem !important;
+  font-size: .68rem !important;
+  line-height: 1.52 !important;
+}
+main #research [class*="teamGrid"] > div:nth-child(1) [class*="personCard"] {
+  border-color: rgba(190,70,99,.52) !important;
+  box-shadow: inset 0 3px 0 rgba(174,40,73,.74), 0 20px 48px -38px rgba(64,25,38,.34) !important;
+}
+main #research [class*="teamGrid"] > div:nth-child(2) [class*="personCard"] {
+  border-color: rgba(221,178,159,.68) !important;
+  box-shadow: inset 0 3px 0 rgba(205,143,112,.64), 0 20px 48px -38px rgba(64,25,38,.30) !important;
+}
+main #research [class*="teamGrid"] > div:nth-child(3) [class*="personCard"] {
+  border-color: rgba(164,128,177,.58) !important;
+  box-shadow: inset 0 3px 0 rgba(126,80,145,.58), 0 20px 48px -38px rgba(64,25,38,.30) !important;
+}
+@media (max-width: 1080px) {
+  main #research [class*="teamGrid"] {
+    grid-template-columns: repeat(3, minmax(17rem, 1fr)) !important;
+  }
+}
+@media (max-width: 700px) {
+  main #research [class*="teamHeadingWrap"],
+  main #research [class*="teamGrid"] {
+    width: calc(100vw - 1.4rem) !important;
+  }
+  main #research [class*="teamHeadingWrap"] {
+    min-height: 12rem !important;
+    padding: 1.55rem 1.2rem !important;
+  }
+  main #research [class*="teamGrid"] {
+    grid-template-columns: 1fr !important;
+  }
+  main #research [class*="personCard"] {
+    grid-template-rows: 13rem auto !important;
+  }
+  main #research [class*="personPhoto"] {
+    height: 13rem !important;
+  }
+}
+`;
+
 const TEAM = [
   {
     name: "Salwa Karboune",
@@ -170,6 +348,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-svh bg-background">
       <SiteHeader />
+      <style>{LANDING_REFINEMENT}</style>
 
       <main className={styles.page}>
         <section className={`${styles.hero} !pt-[3.2rem]`}>
