@@ -3,7 +3,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { AppTopbar } from "@/components/app-topbar";
 import { CommandPaletteProvider } from "@/components/command-palette";
 import { PredictionStoreProvider } from "@/components/prediction-store";
-import { AssistantChat } from "@/components/assistant-chat";
+import { AssistantChatMount } from "@/components/assistant-chat-mount";
 import { RequireAuth } from "@/components/require-auth";
 
 /**
@@ -33,7 +33,7 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
               {children}
             </SidebarInset>
           </SidebarProvider>
-          <AssistantChat />
+          <AssistantChatMount />
         </CommandPaletteProvider>
       </PredictionStoreProvider>
     </RequireAuth>
