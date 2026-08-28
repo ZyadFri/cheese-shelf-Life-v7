@@ -20,18 +20,21 @@ export function LineCurveChart({
   });
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} margin={{ top: 4, right: 12, left: -10, bottom: xLabel ? 16 : 0 }}>
+      <LineChart data={data} margin={{ top: 4, right: 12, left: -10, bottom: xLabel ? 20 : 0 }}>
         <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
+        {/* The legend used to default to the bottom of the chart, directly on
+            top of this axis title -- moved to the top so the two never fight
+            for the same strip of space. */}
+        <Legend verticalAlign="top" height={24} wrapperStyle={CHART_LEGEND_STYLE} />
         <XAxis
           dataKey="x"
           tick={CHART_AXIS_TICK}
           tickLine={false}
           axisLine={{ stroke: "var(--chart-grid)" }}
-          label={xLabel ? { value: xLabel, position: "insideBottom", offset: -8, fontSize: 10, fill: "var(--chart-axis)" } : undefined}
+          label={xLabel ? { value: xLabel, position: "bottom", offset: 0, fontSize: 10, fill: "var(--chart-axis)" } : undefined}
         />
         <YAxis tick={CHART_AXIS_TICK} tickLine={false} axisLine={false} width={40} />
         <Tooltip contentStyle={CHART_TOOLTIP_STYLE} labelStyle={CHART_TOOLTIP_LABEL_STYLE} />
-        <Legend wrapperStyle={CHART_LEGEND_STYLE} />
         {series.map((s) => (
           <Line
             key={s.name}

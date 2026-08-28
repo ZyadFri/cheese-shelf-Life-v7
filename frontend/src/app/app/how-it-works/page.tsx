@@ -47,7 +47,12 @@ export default async function HowItWorksPage() {
           <div className="relative mx-auto max-w-[820px]">
             <div className="absolute -inset-7 -z-10 rounded-[44px] bg-[radial-gradient(circle_at_50%_42%,rgba(147,37,67,.18),rgba(147,37,67,.035)_48%,transparent_72%)] blur-xl" />
             <div className="rounded-[26px] border border-[#d7c3c8] bg-[#24161b] p-2 shadow-[0_34px_80px_-34px_rgba(60,16,31,.68)] ring-1 ring-white/70">
-              <DemoVideo src="/App_Demo.mp4" poster="" />
+              {/* App_Demo.mp4 predates the current UI and its very first frame
+                  (the de facto poster when none is set) shows a Windows
+                  activation watermark from the original screen recording --
+                  an explicit poster keeps that off-screen until the video is
+                  re-recorded against the current app. */}
+              <DemoVideo src="/App_Demo.mp4" poster="/marketing/cheese-aging.jpg" />
             </div>
           </div>
 

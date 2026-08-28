@@ -291,6 +291,27 @@ function EfficacyLandscape({ rankings, onSelect }: { rankings: IngredientRanking
   const maxEvidence = Math.max(...rankings.map((row) => row.n_train), 1);
   const levels = [18, 50, 78, 34, 66];
 
+  // Two-part declutter. (1) Several ingredients can sit within a percent or
+  // two of each other (e.g. a run of medium-tier ones clustered around
+  // +1-4%), which packs their bubbles -- and especially their much wider text
+  // labels -- too close to read no matter which row they're on. Nudge those
+  // dense runs apart along x with a small cascading minimum gap; the exact
+  // value is still available via the tooltip and the table below, so this
+  // overview trades a little positional precision for legibility. (2) Cycle
+  // vertical level by rank along the now-decluttered x rather than by
+  // original array index, so two bubbles only share a row if they're several
+  // ranks apart.
+  const MIN_X_GAP_PCT = 4.6;
+  const byX = rankings
+    .map((row) => ({ row, x: ((row.adjusted_effect_pct - minX) / xSpread) * 100 }))
+    .sort((a, b) => a.x - b.x);
+  for (let i = 1; i < byX.length; i++) {
+    const minAllowed = byX[i - 1].x + MIN_X_GAP_PCT;
+    if (byX[i].x < minAllowed) byX[i].x = minAllowed;
+  }
+  const displayXByIngredient = new Map(byX.map(({ row, x }) => [row.ingredient_name, x]));
+  const levelByIngredient = new Map(byX.map(({ row }, i) => [row.ingredient_name, i % levels.length]));
+
   return (
     <section className="overflow-hidden rounded-[19px] border border-[#e7dde0] bg-white shadow-[0_22px_55px_-46px_rgba(73,24,40,.38)]">
       <div className="flex flex-wrap items-start justify-between gap-3 px-5 pt-4">
@@ -308,9 +329,9 @@ function EfficacyLandscape({ rankings, onSelect }: { rankings: IngredientRanking
           <div className="absolute inset-x-0 top-2 flex justify-between text-[9px] font-semibold uppercase tracking-[0.04em]"><span className="text-[#c43e43]">Negative effect</span><span className="text-[#137a52]">Positive effect</span></div>
           <div className="absolute inset-x-0 bottom-[34px] h-3 rounded-[2px] bg-[linear-gradient(90deg,#de666b_0%,#f1c5c6_36%,#ece7df_50%,#c6e8d6_65%,#299467_100%)]" />
           {rankings.map((row, index) => {
-            const x = ((row.adjusted_effect_pct - minX) / xSpread) * 100;
+            const x = displayXByIngredient.get(row.ingredient_name) ?? ((row.adjusted_effect_pct - minX) / xSpread) * 100;
             const size = 22 + Math.sqrt(row.n_train / maxEvidence) * 30;
-            const y = levels[index % levels.length];
+            const y = levels[levelByIngredient.get(row.ingredient_name) ?? index % levels.length];
             const style = TIER_STYLE[(row.efficacy_class as Tier)] ?? TIER_STYLE.Medium;
             return (
               <button

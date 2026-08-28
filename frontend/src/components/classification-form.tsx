@@ -9,6 +9,7 @@ import {
 import { toast } from "sonner";
 
 import { api, type SchemaData, type ClassDefinitions, type ClassificationResult } from "@/lib/api";
+import { roundForDisplay } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -505,7 +506,7 @@ function AutoField({ col, schema, value, source, onChange }: { col: string; sche
           <SelectContent><SelectItem value="1">Yes</SelectItem><SelectItem value="0">No</SelectItem></SelectContent>
         </Select>
       ) : (
-        <Input type="number" value={Number(value ?? 0)} onChange={(e) => onChange(Number(e.target.value))} />
+        <Input type="number" value={roundForDisplay(Number(value ?? 0))} onChange={(e) => onChange(Number(e.target.value))} />
       )}
     </div>
   );
