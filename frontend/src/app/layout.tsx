@@ -7,7 +7,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { SessionProvider } from "@/components/session-store";
 import { Ambience } from "@/components/ambience";
-import { LandingPipelinePolish } from "@/components/marketing/landing-pipeline-polish";
 
 /**
  * Inter, loaded as a variable font with the optical-size axis.
@@ -81,7 +80,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <TooltipProvider delay={150}>
             <Ambience />
             {children}
-            <LandingPipelinePolish />
           </TooltipProvider>
         </SessionProvider>
         <Toaster />

@@ -22,18 +22,6 @@ const SECTION_BADGE =
   "inline-flex items-center rounded-full border border-[#e8c6d0]/80 bg-[linear-gradient(110deg,rgba(255,255,255,.96),rgba(248,224,231,.92),rgba(255,255,255,.96))] px-3 py-1.5 shadow-[0_12px_30px_-22px_rgba(155,28,60,.65)] backdrop-blur-sm";
 
 const LANDING_REFINEMENT = `
-/* Full-width landing navigation. */
-header:has(.shelf-nav-link) {
-  width: 100% !important;
-  padding: 10px 12px 0 !important;
-}
-header:has(.shelf-nav-link) > div {
-  width: 100% !important;
-  max-width: none !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
 /* Research-team refinement: compact editorial cards, not poster-size portraits. */
 main #research [class*="teamHeadingWrap"] {
   width: min(92vw, 1280px) !important;
@@ -431,35 +419,19 @@ export default function LandingPage() {
               <Reveal delay={0.12}>
                 <a href="#validation" className={styles.pipelineLink}>See pipeline details <ArrowRight className="size-3.5" /></a>
               </Reveal>
-              <div className={styles.pipelineBenchPhoto}>
-                <EditorialImage
-                  src="/marketing/microbes.jpg"
-                  caption="Microbial cultures used in food-science analysis"
-                  className="h-full w-full"
-                  imageClassName="object-cover"
-                />
-              </div>
             </div>
 
-            <div className={`${styles.pipelineCanvas} !min-h-[30rem] !pt-[2.2rem]`}>
-              <div className={styles.pipelineTexture}>
-                <EditorialImage src="/marketing/cheeses.jpg" caption="Cheese texture" className="h-full w-full" imageClassName="object-cover" />
-              </div>
-
-              <svg aria-hidden viewBox="0 0 860 150" preserveAspectRatio="none" className={`${styles.pipelineCurve} !top-[1.2rem]`}>
-                <path d="M15 96 C120 124 150 54 244 80 S368 116 452 62 S605 48 690 78 S790 88 845 52" />
-              </svg>
-
-              <div className="relative z-[2] grid grid-cols-5 gap-0 pt-[1.6rem]">
+            <div className={styles.pipelineCanvas}>
+              <div className={styles.pipelineSteps}>
                 {PIPELINE.map((item, index) => (
-                  <Reveal key={item.step} delay={index * 0.04} y={8}>
-                    <article className="flex min-h-[22rem] flex-col border-r border-[#ebe2e5] px-3 last:border-r-0">
+                  <Reveal key={item.step} delay={index * 0.04} y={10}>
+                    <article className={styles.pipelineStep}>
                       <span className={styles.pipelineStepBadge}>{item.step}</span>
                       <div className="mb-4 flex h-[7.2rem] items-center justify-center">
                         <PipelineMini index={index} />
                       </div>
-                      <h3 className="m-0 text-[0.68rem] font-bold leading-[1.25] text-[#28292c]">{item.title}</h3>
-                      <p className="mt-2 text-[0.51rem] leading-[1.55] text-[#777a80]">{item.body}</p>
+                      <h3>{item.title}</h3>
+                      <p>{item.body}</p>
                     </article>
                   </Reveal>
                 ))}

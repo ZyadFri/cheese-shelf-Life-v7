@@ -497,8 +497,7 @@
 }
 .pipelineIntro {
   position: relative;
-  min-height: 31rem;
-  padding-bottom: 10.8rem;
+  min-height: 0;
 }
 .pipelineTitle { max-width: 12ch; }
 .pipelineCopy { max-width: 25ch; }
@@ -511,89 +510,73 @@
   font-size: .62rem;
   font-weight: 650;
 }
-.pipelineBenchPhoto {
-  position: absolute;
-  left: -4.8rem;
-  bottom: -4rem;
-  width: 21rem;
-  height: 12.5rem;
-  overflow: hidden;
-  border-radius: 0 8rem 0 0;
-  background: #eee;
-  box-shadow: 0 -10px 40px rgba(63, 49, 48, .04);
-}
-.pipelineBenchPhoto::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, rgba(255,255,255,.03), rgba(255,255,255,.14));
-}
 .pipelineCanvas {
   position: relative;
-  min-height: 31rem;
-  padding-top: 5.5rem;
-  isolation: isolate;
+  padding-top: 2.5rem;
 }
-.pipelinePortrait {
-  position: absolute;
-  left: 15%;
-  top: -.7rem;
-  z-index: 4;
-  width: 7.6rem;
-  height: 7.6rem;
-  overflow: hidden;
-  border: 7px solid #fff;
-  border-radius: 50%;
-  box-shadow: 0 18px 36px rgba(58, 41, 41, .11);
-}
-.pipelineTexture {
-  position: absolute;
-  right: -8.5rem;
-  top: -2rem;
-  z-index: -1;
-  width: 18rem;
-  height: 20rem;
-  overflow: hidden;
-  opacity: .23;
-  mask-image: linear-gradient(90deg, transparent 0%, #000 42%);
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 42%);
-}
-.pipelineTexture::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(255,255,255,.45);
-}
-.pipelineCurve {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 4.2rem;
-  z-index: 0;
-  width: 100%;
-  height: 9.5rem;
-  overflow: visible;
-}
-.pipelineCurve path {
-  fill: none;
-  stroke: #e4abb9;
-  stroke-width: 1.4;
-  vector-effect: non-scaling-stroke;
-}
-.pipelineStepsLiving {
+/* Flow-based zigzag: even steps get pushed down via margin-top rather than
+   `transform`, so this container's height is whatever the browser naturally
+   computes for its tallest column -- it can never under-reserve space and
+   let the next section overlap it. */
+.pipelineSteps {
   position: relative;
   z-index: 2;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: .8rem;
-  padding-top: 2.2rem;
+  gap: 1.1rem;
 }
-.pipelineLivingStep {
-  min-height: 18.6rem;
-  padding: 0 .45rem;
-  border-right: 1px solid rgba(231, 224, 226, .76);
+.pipelineSteps > div:nth-child(even) {
+  margin-top: 3.75rem;
 }
-.pipelineStepsLiving > div:last-child .pipelineLivingStep { border-right: 0; }
+.pipelineStep {
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-height: 20rem;
+  flex-direction: column;
+  padding: 1.3rem 1.15rem;
+  border: 1px solid #ecdfe3;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff, #fffafb);
+  box-shadow: 0 20px 46px -38px rgba(74, 25, 40, .3);
+  transition: transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease, border-color .3s ease;
+}
+.pipelineStep:hover {
+  transform: translateY(-4px);
+  border-color: rgba(169, 44, 75, .4);
+  box-shadow: 0 26px 56px -34px rgba(91, 26, 47, .4);
+}
+.pipelineStep h3 {
+  margin: 0;
+  color: #28292c;
+  font-size: .8rem;
+  line-height: 1.25;
+  font-weight: 720;
+}
+.pipelineStep p {
+  margin: .5rem 0 0;
+  color: #777a80;
+  font-size: .7rem;
+  line-height: 1.55;
+}
+.pipelineAxis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .9rem;
+  margin-top: 3.5rem;
+  color: #a02545;
+  font-size: .58rem;
+  font-weight: 720;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.pipelineAxis i {
+  max-width: 7rem;
+  flex: 1;
+  border-top: 1px solid #e4b8c3;
+}
+.pipelineAxis b { font-size: .68rem; letter-spacing: .24em; }
 .pipelineStepBadge {
   display: grid;
   place-items: center;
@@ -607,20 +590,6 @@
   box-shadow: 0 7px 19px rgba(122,27,46,.09);
   font-size: .78rem;
   font-weight: 760;
-}
-.pipelineLivingStep h3 {
-  margin: 0;
-  color: #28292c;
-  font-size: .68rem;
-  line-height: 1.25;
-  font-weight: 700;
-}
-.pipelineLivingStep p {
-  min-height: 3.6rem;
-  margin: .48rem 0 0;
-  color: #777a80;
-  font-size: .51rem;
-  line-height: 1.5;
 }
 .pipelineDots {
   position: relative;
@@ -733,24 +702,6 @@
   color: #fff;
   box-shadow: 0 10px 25px rgba(122,27,46,.22);
 }
-.pipelineAxis {
-  position: absolute;
-  left: .45rem;
-  right: .45rem;
-  bottom: 1.7rem;
-  display: grid;
-  grid-template-columns: auto 1fr auto 1fr auto;
-  align-items: center;
-  gap: .75rem;
-  color: #a02545;
-  font-size: .48rem;
-  font-weight: 720;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
-.pipelineAxis i { border-top: 1px solid #e4b8c3; }
-.pipelineAxis b { font-size: .58rem; letter-spacing: .24em; }
-
 .explainability {
   position: relative;
   display: grid;
@@ -1161,7 +1112,6 @@
   .capabilityCard { width: 30%; }
   .capabilityCard p { font-size: .48rem; }
   .pipelineStory { gap: 1rem; }
-  .pipelineLivingStep { padding: 0 .25rem; }
   .validationStorySection { grid-template-columns: 1fr .85fr; }
   .validationDataRow { grid-template-columns: 1fr; }
   .validationStatus { grid-template-columns: 2.2rem 1fr; column-gap: .55rem; }
@@ -1181,10 +1131,14 @@
   .platformIntro { max-width: 34rem; }
   .platformTitle { max-width: 13ch; }
   .capabilityStage { min-height: 36rem; margin-top: 1rem; }
-  .pipelineIntro { min-height: 0; padding-bottom: 0; }
-  .pipelineBenchPhoto { display: none; }
-  .pipelineCanvas { min-height: 30rem; margin-top: 1rem; }
-  .pipelinePortrait { left: 12%; }
+  .pipelineCanvas { margin-top: 1rem; }
+  .pipelineSteps {
+    grid-template-columns: repeat(5, minmax(11rem, 1fr));
+    overflow-x: auto;
+    padding-bottom: .75rem;
+  }
+  .pipelineSteps > div { scroll-snap-align: start; }
+  .pipelineSteps { scroll-snap-type: x proximity; }
   .explainability { grid-template-columns: .78fr .75fr; }
   .chartCard { grid-column: 1 / -1; }
   .moleculeArt { display: none; }
@@ -1245,16 +1199,17 @@
   .capabilityCard:hover { transform: translateY(-3px) !important; }
   .capabilityCardInner { padding: .95rem; }
   .capabilityCard p { font-size: .58rem; }
-  .pipelineCanvas { min-height: 0; padding-top: 6.8rem; }
-  .pipelinePortrait { left: 50%; transform: translateX(-50%); }
-  .pipelineTexture,
-  .pipelineCurve { display: none; }
-  .pipelineStepsLiving { grid-template-columns: 1fr 1fr; gap: 1.1rem .7rem; }
-  .pipelineLivingStep { min-height: 14rem; border-right: 0; border-bottom: 1px solid #eee5e8; padding-bottom: 1rem; }
-  .pipelineStepsLiving > div:last-child { grid-column: 1 / -1; }
-  .pipelineAxis { position: relative; left: auto; right: auto; bottom: auto; margin-top: 1rem; grid-template-columns: auto 1fr auto; }
-  .pipelineAxis b,
-  .pipelineAxis i:nth-of-type(2) { display: none; }
+  .pipelineCanvas { padding-top: 2rem; }
+  .pipelineSteps {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.1rem .7rem;
+    overflow-x: visible;
+  }
+  .pipelineSteps > div:nth-child(even) { margin-top: 0; }
+  .pipelineSteps > div:last-child { grid-column: 1 / -1; }
+  .pipelineStep { min-height: 14rem; }
+  .pipelineAxis { margin-top: 1.5rem; }
+  .pipelineAxis b { display: none; }
   .explainability { grid-template-columns: 1fr; margin-top: 2.7rem; gap: 1.5rem; }
   .petriStage { min-height: 15rem; }
   .petriBlobOne { width: 14.5rem; height: 14rem; }
