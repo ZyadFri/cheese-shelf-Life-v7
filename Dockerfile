@@ -42,9 +42,7 @@ RUN useradd --create-home appuser \
     && chown -R appuser:appuser /app
 USER appuser
 
-ENV TF_CPP_MIN_LOG_LEVEL=3 \
-    TF_ENABLE_ONEDNN_OPTS=0 \
-    PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8010
 

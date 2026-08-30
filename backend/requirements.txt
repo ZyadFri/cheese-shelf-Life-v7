@@ -28,4 +28,10 @@ lightgbm==4.7.0
 xgboost==3.3.0
 interpret==0.7.8
 shap==0.52.0
-tensorflow==2.21.0
+
+# tensorflow deliberately omitted: model_service.py only imports it inside
+# `if self.lstm_available and (models_dir / "lstm.keras").exists()`, and the
+# current artifacts/training_manifest.json ships with lstm_available=false --
+# so it is never actually loaded at runtime. Installing an unused ~600MB
+# framework just to have it sit idle is pure cost on a memory-constrained
+# host; re-add it here if LSTM is ever re-enabled for production.
