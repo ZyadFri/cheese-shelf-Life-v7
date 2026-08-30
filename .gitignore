@@ -28,6 +28,7 @@ model_versions/
 backend/.env
 backend/storage/*.db
 backend/storage/.session_secret
+backend/storage/avatars/
 .env
 .env.local
 .env.*.local

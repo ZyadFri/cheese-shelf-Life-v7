@@ -10,7 +10,14 @@ COPY backend/requirements.txt ./backend/requirements.txt
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
 # Root-level service modules imported by backend/main.py via sys.path.
-COPY model_service.py classification_service.py ingredient_ranking_service.py specialist_registry.py ./
+# concentration_units.py / feature_naming.py are plain lookup-table modules
+# imported by classification_service.py. train_specialists.py is imported by
+# specialist_registry.py purely for its DATA_VERSION_CONFIG constant -- its
+# argparse-driven training entrypoint (guarded by if __name__=="__main__")
+# is never invoked here since CMD only ever runs uvicorn; the file has to be
+# present for the import to resolve, but nothing in this image can trigger
+# retraining.
+COPY model_service.py classification_service.py ingredient_ranking_service.py specialist_registry.py concentration_units.py feature_naming.py train_specialists.py ./
 
 # The FastAPI package itself (never copies backend/.env or backend/storage --
 # secrets and the SQLite database are supplied/mounted at runtime, not baked

@@ -15,12 +15,24 @@ const API_PORT = process.env.NEXT_PUBLIC_API_PORT ?? "8010";
  * cookie gets stored against 127.0.0.1 and is never sent back — every request
  * looks signed-out. Deriving the hostname keeps them on the same host whichever
  * one you browse to. NEXT_PUBLIC_API_BASE still overrides for real deployments.
+ *
+ * In production NEXT_PUBLIC_API_BASE is deliberately set to "" so the browser
+ * issues relative /api/... requests that next.config.ts's rewrite proxies
+ * same-origin to BACKEND_ORIGIN (keeps the httpOnly session cookie
+ * same-origin). But "" is a defined value, not undefined, so `??` would hand
+ * that same empty string to server-side (RSC) calls too -- and a relative URL
+ * is not valid input to Node's fetch(), which every /app/* Server Component
+ * hits at request time. The server has no "browser origin" to be relative
+ * to, so it must always resolve an absolute URL itself: BACKEND_ORIGIN
+ * (server-only env var) in production, localhost in dev. These SSR calls are
+ * all to public, unauthenticated reference/schema endpoints, so skipping the
+ * proxy (and the session cookie) here is fine.
  */
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ??
-  (typeof window !== "undefined"
-    ? `${window.location.protocol}//${window.location.hostname}:${API_PORT}`
-    : `http://localhost:${API_PORT}`);
+  typeof window === "undefined"
+    ? (process.env.BACKEND_ORIGIN ?? `http://localhost:${API_PORT}`)
+    : (process.env.NEXT_PUBLIC_API_BASE ??
+      `${window.location.protocol}//${window.location.hostname}:${API_PORT}`);
 
 /** Error carrying the HTTP status, so callers can branch on 401/409/422 rather
  *  than string-matching a message. `detail` is FastAPI's error text. */
