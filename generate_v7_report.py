@@ -66,7 +66,7 @@ reg = SpecialistRegistry(data_version="v7")
 sensitivity_rows = []
 collapse_rows = []
 for category in CATEGORIES:
-    svc = reg.services[category]["safety_endpoint"]
+    svc, _ = reg.resolve(category, "safety_endpoint")
     row = svc.default_row()
     base_pred = svc.predict_one(svc.best_model, row)["prediction_days"]
     growth_options = svc.schema["categorical_options"].get("growth_support", [])

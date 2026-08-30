@@ -159,7 +159,10 @@ def match_best_model(text: str, services: dict[str, Any]) -> dict[str, Any] | No
     lines = ["Shelf-Life Studio has no single \"best model\" -- it depends which system you mean:"]
     reg = services.get("specialist_registry")
     if reg is not None:
-        n_loaded = sum(1 for tasks in reg.services.values() for svc in tasks.values() if svc is not None)
+        # reg.services holds availability booleans (lazy-loaded specialists
+        # are cached separately, see specialist_registry.py), so this is a
+        # count of trained specialists, not currently-resident ones.
+        n_loaded = sum(1 for tasks in reg.services.values() for is_available in tasks.values() if is_available)
         lines.append(f"- Specialist shelf-life prediction: {n_loaded} specialists loaded (one per cheese category x task), each independently best-fit -- ask about a specific category/task for its model.")
     clf = services.get("classification_service")
     if clf is not None:

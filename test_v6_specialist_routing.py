@@ -111,19 +111,20 @@ def test_missing_specialist_no_fallback(registry: SpecialistRegistry, monkeypatc
     # Simulate a missing safety specialist and confirm resolve() does NOT
     # silently substitute the general model -- the exact bug this hardening
     # pass removed.
-    real_svc = registry.services["hard"]["safety_endpoint"]
-    monkeypatch.setitem(registry.services["hard"], "safety_endpoint", None)
-    try:
-        svc, meta = registry.resolve("hard", "safety_endpoint")
-        assert svc is None
-        assert meta["level"] == "unavailable"
-        assert "no fallback" in meta["reason"].lower() or "cannot be served" in meta["reason"].lower()
+    # registry.services now holds plain availability booleans (the actual
+    # ModelService instances are lazy-loaded and LRU-cached elsewhere) --
+    # simulate "missing" the same way SpecialistRegistry itself represents
+    # it. monkeypatch.setitem auto-reverts this at test teardown.
+    monkeypatch.setitem(registry.services["hard"], "safety_endpoint", False)
 
-        support = registry.assess_prediction_support("hard", "safety_endpoint", BASE_ROW)
-        assert support["can_predict"] is False
-        assert support["level"] == "unavailable"
-    finally:
-        registry.services["hard"]["safety_endpoint"] = real_svc
+    svc, meta = registry.resolve("hard", "safety_endpoint")
+    assert svc is None
+    assert meta["level"] == "unavailable"
+    assert "no fallback" in meta["reason"].lower() or "cannot be served" in meta["reason"].lower()
+
+    support = registry.assess_prediction_support("hard", "safety_endpoint", BASE_ROW)
+    assert support["can_predict"] is False
+    assert support["level"] == "unavailable"
 
 
 def test_unknown_category_no_fallback(registry: SpecialistRegistry) -> None:
@@ -174,8 +175,8 @@ def test_assess_support_and_predict_use_same_schema(registry: SpecialistRegistry
 
 
 def test_specialist_isolation(registry: SpecialistRegistry) -> None:
-    soft_general = registry.services["soft"]["general_shelf_life"]
-    hard_safety = registry.services["hard"]["safety_endpoint"]
+    soft_general, _ = registry.resolve("soft", "general_shelf_life")
+    hard_safety, _ = registry.resolve("hard", "safety_endpoint")
     assert soft_general.tree_pre is not hard_safety.tree_pre
     assert soft_general.schema is not hard_safety.schema
     assert soft_general.feature_cols != hard_safety.feature_cols or soft_general is not hard_safety
@@ -191,8 +192,8 @@ def test_indicator_task_map_matches_training_data(registry: SpecialistRegistry) 
 
 def test_indicator_task_map_has_no_ambiguity(registry: SpecialistRegistry) -> None:
     for category in CATEGORIES:
-        general_svc = registry.services[category]["general_shelf_life"]
-        safety_svc = registry.services[category]["safety_endpoint"]
+        general_svc, _ = registry.resolve(category, "general_shelf_life")
+        safety_svc, _ = registry.resolve(category, "safety_endpoint")
         if general_svc is None or safety_svc is None:
             continue
         general_indicators = set(general_svc.schema["categorical_options"].get("indicator_type", []))

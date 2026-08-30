@@ -412,12 +412,17 @@ def _require_v6() -> SpecialistRegistry:
 
 @app.get("/api/v6/health")
 def v6_health() -> dict:
+    # SPECIALIST_REGISTRY.services now holds plain availability booleans, not
+    # the loaded ModelService instances themselves (those are lazy-loaded and
+    # LRU-cached on first actual prediction -- see specialist_registry.py) --
+    # this endpoint reports which specialists exist without loading any of
+    # them.
     if SPECIALIST_REGISTRY is None:
         return {"available": False}
     loaded = {
-        f"{cat}/{task}": svc is not None
+        f"{cat}/{task}": is_available
         for cat, tasks in SPECIALIST_REGISTRY.services.items()
-        for task, svc in tasks.items()
+        for task, is_available in tasks.items()
     }
     return {"available": True, "specialists": loaded}
 

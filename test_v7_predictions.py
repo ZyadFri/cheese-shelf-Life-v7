@@ -22,7 +22,7 @@ def main() -> None:
 
     for category in CATEGORIES:
         for task in TASKS:
-            svc = reg.services[category].get(task)
+            svc, _ = reg.resolve(category, task)
             label = f"{category}/{task}"
             print(f"{'=' * 70}\n{label}\n{'=' * 70}")
             if svc is None:

@@ -143,12 +143,17 @@ def tool_get_project_overview(services: dict[str, Any], **_: Any) -> dict[str, A
     }
     reg = _get_specialist_registry(services)
     if reg is not None:
+        # reg.services holds plain availability booleans (which specialists
+        # were trained), not the loaded instances -- those are lazy-loaded
+        # and LRU-cached on first actual prediction (see
+        # specialist_registry.py), so this overview reports availability
+        # without forcing every specialist into memory just to answer it.
         overview["specialist_shelf_life_system"] = {
             "categories": list(reg.services.keys()),
             "tasks": TASKS,
             "loaded_specialists": {
-                f"{cat}/{task}": svc2 is not None
-                for cat, tasks in reg.services.items() for task, svc2 in tasks.items()
+                f"{cat}/{task}": is_available
+                for cat, tasks in reg.services.items() for task, is_available in tasks.items()
             },
         }
     clf = _get_classification_service(services)
@@ -271,16 +276,27 @@ def tool_get_specialist_info(
         return {"error": "The specialist shelf-life system is not available (artifacts_v6/ not found)."}
 
     if cheese_category is None:
-        return {
-            "categories": list(reg.services.keys()), "tasks": TASKS,
-            "loaded_specialists": {
-                f"{cat}/{task}": {
-                    "available": svc is not None,
+        # Reporting best_model/n_train for every specialist means actually
+        # resolving each one (reg.resolve uses the same lazy-load + LRU cache
+        # a real prediction does) -- an explicit "tell me about every
+        # specialist" request is expected to pay that cost once, same as it
+        # always implicitly did back when all 6 were loaded eagerly at
+        # startup; a normal prediction never takes this path.
+        summary: dict[str, dict[str, Any]] = {}
+        for cat, tasks in reg.services.items():
+            for task, is_available in tasks.items():
+                if not is_available:
+                    summary[f"{cat}/{task}"] = {"available": False, "best_model": None, "n_train": None}
+                    continue
+                svc, _ = reg.resolve(cat, task)
+                summary[f"{cat}/{task}"] = {
+                    "available": True,
                     "best_model": svc.model_label(svc.best_model) if svc else None,
                     "n_train": svc.manifest.get("n_train") if svc else None,
                 }
-                for cat, tasks in reg.services.items() for task, svc in tasks.items()
-            },
+        return {
+            "categories": list(reg.services.keys()), "tasks": TASKS,
+            "loaded_specialists": summary,
         }
 
     if model_task is None and indicator_type:

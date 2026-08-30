@@ -120,6 +120,70 @@ class FrameImputer:
         return out[self.numeric_cols + self.categorical_cols]
 
 
+class LazyModelStore:
+    """Dict-like view over one ModelService's trained model files: knows
+    which model names exist (from disk, checked once and cheaply -- a
+    Path.exists() call, never a load) and only actually deserializes a
+    model the first time it is requested, caching the result afterward.
+
+    Presents the same __contains__ / __getitem__ / .keys() interface a
+    plain dict does, so every existing call site ("ebm" in service.models,
+    service.models["ebm"], list(service.models.keys())) keeps working
+    unchanged -- only the *timing* of joblib.load() changes, from "always,
+    at ModelService construction" to "only if this specific model is ever
+    actually predicted with." A specialist that only ever serves its best
+    model (the normal case: /api/predict and /api/v6/predict always resolve
+    to svc.best_model) now only ever loads that one model family instead of
+    all four -- the biggest single lever on this service's memory use, since
+    six V6 specialists times four algorithms is 24 fitted estimators that a
+    typical session touches only one or two of.
+
+    A missing file now surfaces as an error on first *use* rather than at
+    startup -- an unavoidable consequence of not eagerly touching the file
+    at all. In practice every one of these files is produced together by
+    the same training run, so this is not observed to change behavior; it
+    is called out here because it is the one honest behavioral difference
+    lazy loading introduces.
+    """
+
+    def __init__(self, models_dir: Path, lstm_available: bool) -> None:
+        self._paths: dict[str, Path] = {}
+        for name in ("random_forest", "lightgbm", "xgboost", "ebm"):
+            path = models_dir / f"{name}.joblib"
+            if path.exists():
+                self._paths[name] = path
+        if lstm_available:
+            lstm_path = models_dir / "lstm.keras"
+            if lstm_path.exists():
+                self._paths["lstm"] = lstm_path
+        self._cache: dict[str, Any] = {}
+
+    def __contains__(self, name: object) -> bool:
+        return name in self._paths
+
+    def __getitem__(self, name: str) -> Any:
+        if name not in self._paths:
+            raise KeyError(name)
+        if name not in self._cache:
+            if name == "lstm":
+                import tensorflow as tf
+                self._cache[name] = tf.keras.models.load_model(self._paths[name])
+            else:
+                self._cache[name] = joblib.load(self._paths[name])
+        return self._cache[name]
+
+    def get(self, name: str, default: Any = None) -> Any:
+        return self[name] if name in self else default
+
+    def keys(self):
+        return self._paths.keys()
+
+    def is_loaded(self, name: str) -> bool:
+        """True only if this model has actually been deserialized already --
+        used solely for memory-usage diagnostics, never for prediction logic."""
+        return name in self._cache
+
+
 MODEL_LABELS = {
     "random_forest": "Random Forest",
     "lightgbm": "LightGBM",
@@ -168,16 +232,17 @@ class ModelService:
         self.tree_pre = joblib.load(models_dir / "preprocessor_tree.joblib")
         self.ebm_pre = joblib.load(models_dir / "preprocessor_ebm.joblib")
 
-        self.models: dict[str, Any] = {
-            "random_forest": joblib.load(models_dir / "random_forest.joblib"),
-            "lightgbm": joblib.load(models_dir / "lightgbm.joblib"),
-            "xgboost": joblib.load(models_dir / "xgboost.joblib"),
-            "ebm": joblib.load(models_dir / "ebm.joblib"),
-        }
-        if self.lstm_available and (models_dir / "lstm.keras").exists():
-            import tensorflow as tf
-            self.models["lstm"] = tf.keras.models.load_model(models_dir / "lstm.keras")
-            self.lstm_scaler = joblib.load(models_dir / "preprocessor_lstm_scaler.joblib")
+        # Deliberately NOT loaded here: the four regression models
+        # (random_forest/lightgbm/xgboost/ebm, plus lstm when enabled) are
+        # each 10s-100s of MB once deserialized and a real prediction only
+        # ever uses one of them (self.best_model). LazyModelStore defers
+        # each joblib.load()/keras load to the first actual request for
+        # that specific model and caches it from then on -- see its
+        # docstring for why this is safe to do without changing any
+        # returned prediction.
+        self.models = LazyModelStore(models_dir, lstm_available=self.lstm_available)
+        self._lstm_scaler_path = models_dir / "preprocessor_lstm_scaler.joblib"
+        self._lstm_scaler_cache: Any = None
 
         # Dashboard-only lookups for auto-filling the prediction form. Built once
         # here from the exact same train split train_models.py (or
@@ -191,6 +256,15 @@ class ModelService:
         train_df = make_context_splits(self.full_df, seed=self.manifest.get("random_seed", 42))["train"]
         self.matrix_lookup = build_matrix_lookup(train_df)
         self.ingredient_lookup = build_ingredient_lookup(train_df)
+
+    @property
+    def lstm_scaler(self) -> Any:
+        """Lazy to match LazyModelStore's model: only actually loaded if an
+        LSTM prediction is requested (lstm_available is false in the current
+        production manifest, so this never fires today)."""
+        if self._lstm_scaler_cache is None:
+            self._lstm_scaler_cache = joblib.load(self._lstm_scaler_path)
+        return self._lstm_scaler_cache
 
     @property
     def available_models(self) -> list[str]:

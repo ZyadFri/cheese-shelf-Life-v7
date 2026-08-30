@@ -14,6 +14,7 @@ backend/main.py.
 from __future__ import annotations
 
 import logging
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,16 @@ DATA_DIR = ROOT / "data" / "raw"
 
 CATEGORIES = ["soft", "semi_hard", "hard"]
 TASKS = ["general_shelf_life", "safety_endpoint"]
+
+# How many specialists (of the 6 possible category x task combinations) may
+# sit loaded in memory at once. Deliberately small: a session's predictions
+# are almost always concentrated on one or two specialists at a time (the
+# cheese category + task the user is actually working with), and each
+# resident specialist eventually pulls in one full trained model family
+# (see LazyModelStore) plus its own preprocessors and training CSV. Least-
+# recently-used eviction keeps total memory bounded regardless of how many
+# distinct specialists a long-running session touches over time.
+MAX_CACHED_SPECIALISTS = 2
 
 
 def resolve_support_level(confidence: float | None, source: str | None = None) -> dict[str, str]:
@@ -118,66 +129,116 @@ def build_cheese_catalog(data_version: str = "v6") -> dict[str, list[dict[str, A
 
 
 class SpecialistRegistry:
-    """{soft: {general_shelf_life: ModelService, safety_endpoint: ModelService}, semi_hard: {...}, hard: {...}}"""
+    """Routes to one of 6 category x task specialists, loading each lazily
+    (on first actual use) and keeping at most MAX_CACHED_SPECIALISTS of them
+    resident at a time under LRU eviction -- see resolve() and
+    _load_specialist(). self.services tracks plain availability (bool), not
+    the loaded instances themselves; that split is what lets /api/v6/health
+    report which specialists exist without forcing all 6 into memory just to
+    answer a health probe."""
 
     def __init__(self, data_version: str = "v6") -> None:
         self.data_version = data_version
         version_cfg = DATA_VERSION_CONFIG[data_version]
-        artifacts_dir_root = ROOT / version_cfg["artifacts_dir"]
-        self.services: dict[str, dict[str, ModelService | None]] = {c: {} for c in CATEGORIES}
+        self._artifacts_dir_root = ROOT / version_cfg["artifacts_dir"]
+        self._csv_paths: dict[str, Path] = {
+            category: DATA_DIR / version_cfg["csv_pattern"].format(CAT=category.upper())
+            for category in CATEGORIES
+        }
+
+        # Cheap existence check only -- no CSV/JSON/model file is read here.
+        # A specialist whose directory doesn't exist is exactly the case the
+        # old code caught via `except FileNotFoundError` around eagerly
+        # constructing it; checking the directory up front gets the same
+        # availability answer without the load.
+        self.services: dict[str, dict[str, bool]] = {
+            category: {
+                task: (self._artifacts_dir_root / category / task).exists()
+                for task in TASKS
+            }
+            for category in CATEGORIES
+        }
         for category in CATEGORIES:
-            csv_path = DATA_DIR / version_cfg["csv_pattern"].format(CAT=category.upper())
             for task in TASKS:
-                artifacts_dir = artifacts_dir_root / category / task
-                try:
-                    svc = ModelService(artifacts_dir=artifacts_dir, data_path=csv_path, data_sheet=None)
-                    # ModelService loads the whole category CSV as full_df by
-                    # design (for matrix/ingredient lookups); scope it down to
-                    # just this task's rows so dataset_statistics()/etc. stay
-                    # specialist-scoped rather than mixing tasks.
-                    svc.full_df = svc.full_df[svc.full_df["model_task"] == task].reset_index(drop=True)
-                    self.services[category][task] = svc
-                    logger.info("Loaded specialist %s/%s (n_train=%s, best=%s)",
-                                category, task, svc.manifest.get("n_train"), svc.best_model)
-                except FileNotFoundError as exc:
-                    self.services[category][task] = None
-                    logger.warning("Specialist %s/%s not available: %s", category, task, exc)
+                if not self.services[category][task]:
+                    logger.warning("Specialist %s/%s not available: no artifacts directory", category, task)
 
         self.cheese_catalog = build_cheese_catalog(data_version)
-        self._assert_specialist_isolation()
 
-    def _assert_specialist_isolation(self) -> None:
+        # LRU cache of the actually-loaded ModelService instances, plus the
+        # isolation-check bookkeeping scoped to exactly what's cached right
+        # now (see _check_isolation).
+        self._cache: OrderedDict[tuple[str, str], ModelService] = OrderedDict()
+        self._isolation_seen: dict[int, str] = {}
+
+    def _load_specialist(self, category: str, task: str) -> ModelService:
+        """Loads and caches the (category, task) specialist, evicting the
+        least-recently-used one first if the cache is already full. Callers
+        must only invoke this after confirming self.services[category][task]
+        is True."""
+        artifacts_dir = self._artifacts_dir_root / category / task
+        svc = ModelService(artifacts_dir=artifacts_dir, data_path=self._csv_paths[category], data_sheet=None)
+        # ModelService loads the whole category CSV as full_df by design
+        # (for matrix/ingredient lookups); scope it down to just this task's
+        # rows so dataset_statistics()/etc. stay specialist-scoped rather
+        # than mixing tasks.
+        svc.full_df = svc.full_df[svc.full_df["model_task"] == task].reset_index(drop=True)
+        logger.info("Loaded specialist %s/%s (n_train=%s, best=%s)",
+                    category, task, svc.manifest.get("n_train"), svc.best_model)
+
+        self._check_isolation(category, task, svc)
+
+        self._cache[(category, task)] = svc
+        self._cache.move_to_end((category, task))
+        while len(self._cache) > MAX_CACHED_SPECIALISTS:
+            evicted_key, evicted_svc = self._cache.popitem(last=False)
+            self._forget_isolation(evicted_key, evicted_svc)
+            logger.info("Evicted specialist %s/%s from cache (LRU, max=%d)",
+                        evicted_key[0], evicted_key[1], MAX_CACHED_SPECIALISTS)
+        return svc
+
+    def _check_isolation(self, category: str, task: str, svc: ModelService) -> None:
         """Hardening check, not a bug fix -- each ModelService instance
         already owns its own model/preprocessor/schema objects with no
         shared mutable state, verified during the audit. This makes that
         guarantee explicit and durable: if a future refactor ever
         accidentally shares a preprocessor or schema object between two
-        specialists, this fails loudly at startup instead of silently
-        mixing feature spaces at prediction time."""
-        seen: dict[int, str] = {}
-        for category, tasks in self.services.items():
-            for task, svc in tasks.items():
-                if svc is None:
-                    continue
-                for label, obj in (("tree_pre", svc.tree_pre), ("ebm_pre", svc.ebm_pre), ("schema", svc.schema)):
-                    key = id(obj)
-                    owner = f"{category}/{task}:{label}"
-                    if key in seen:
-                        raise RuntimeError(
-                            f"Specialist isolation violated: {owner} shares an object with {seen[key]} "
-                            f"-- a model would be served with another specialist's preprocessing/schema."
-                        )
-                    seen[key] = owner
+        specialists, this fails loudly instead of silently mixing feature
+        spaces at prediction time. Checked incrementally against whatever is
+        currently cached (not all 6 at once, since most are never resident
+        simultaneously under lazy loading) -- see _forget_isolation for why
+        entries must be removed again on eviction rather than left stale."""
+        for label, obj in (("tree_pre", svc.tree_pre), ("ebm_pre", svc.ebm_pre), ("schema", svc.schema)):
+            key = id(obj)
+            owner = category + "/" + task + ":" + label
+            if key in self._isolation_seen:
+                raise RuntimeError(
+                    "Specialist isolation violated: " + owner + " shares an object with " +
+                    self._isolation_seen[key] +
+                    " -- a model would be served with another specialist's preprocessing/schema."
+                )
+            self._isolation_seen[key] = owner
+
+    def _forget_isolation(self, key: tuple, svc: ModelService) -> None:
+        """Must run whenever a specialist leaves the cache: CPython can and
+        does reuse the id() of a freed object, so leaving a stale entry
+        behind risks a false-positive isolation violation the next time an
+        unrelated object happens to land at that same address."""
+        for obj in (svc.tree_pre, svc.ebm_pre, svc.schema):
+            self._isolation_seen.pop(id(obj), None)
 
     def indicator_task_map(self, cheese_category: str) -> dict[str, str]:
         """The single authoritative indicator_type -> model_task lookup for
         a category, built once from each specialist's own trained schema
         (categorical_options.indicator_type) -- not re-derived anywhere
         else. The frontend calls /api/v6/routing (which wraps this) instead
-        of independently reconstructing this membership itself."""
+        of independently reconstructing this membership itself. Goes through
+        resolve() (same lazy-load + LRU path as a real prediction) rather
+        than reading self.services directly, since that dict now holds
+        availability booleans, not the loaded instances."""
         mapping: dict[str, str] = {}
         for task in TASKS:
-            svc = self.services.get(cheese_category, {}).get(task)
+            svc, _ = self.resolve(cheese_category, task)
             if svc is None:
                 continue
             for indicator in svc.schema["categorical_options"].get("indicator_type", []):
@@ -193,19 +254,30 @@ class SpecialistRegistry:
         hard-fails with an explicit error rather than silently substituting
         a different specialist (this was previously a safety->general
         fallback here; removed per explicit audit requirement -- a safety
-        prediction must never be silently served by the general model)."""
+        prediction must never be silently served by the general model).
+
+        The actual model files are loaded here on first use for this
+        (cheese_category, model_task) pair (see _load_specialist) and kept
+        warm in a small LRU cache for subsequent calls; a cache hit is just
+        a dict lookup plus a move-to-end, not a reload."""
         if cheese_category not in CATEGORIES:
             return None, {"level": "unavailable", "reduced_support": True, "reason": f"Unknown cheese_category: {cheese_category!r}"}
         if model_task not in TASKS:
             return None, {"level": "unavailable", "reduced_support": True, "reason": f"Unknown model_task: {model_task!r}"}
 
-        svc = self.services[cheese_category].get(model_task)
-        if svc is None:
+        if not self.services[cheese_category][model_task]:
             return None, {
                 "level": "unavailable", "reduced_support": True,
                 "reason": f"No specialist model is available for {cheese_category}/{model_task}. "
                           f"This prediction cannot be served -- there is no fallback to a different specialist.",
             }
+
+        key = (cheese_category, model_task)
+        svc = self._cache.get(key)
+        if svc is not None:
+            self._cache.move_to_end(key)
+        else:
+            svc = self._load_specialist(cheese_category, model_task)
 
         thin = bool(svc.manifest.get("thin_split"))
         if thin:
