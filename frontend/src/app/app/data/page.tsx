@@ -25,16 +25,9 @@ export default async function DataPage() {
     .sort((a, b) => b[1] - a[1])
     .map(([label, value]) => ({ label: humanize(label), value }));
 
-  const ruleData = Object.entries(provenance.generation_rules)
-    .sort((a, b) => b[1] - a[1])
-    .map(([label, value]) => ({
-      label: humanize(label.replace(/^RULE_/, "")),
-      value,
-    }));
-
   const qualityEntries = Object.entries(provenance.quality_flags).sort((a, b) => b[1] - a[1]);
   const qualityTotal = qualityEntries.reduce((sum, [, value]) => sum + value, 0);
-  const provenanceTotal = ruleData.reduce((sum, item) => sum + item.value, 0);
+  const provenanceTotal = Object.values(provenance.generation_rules).reduce((sum, value) => sum + value, 0);
   const qualityCoverage = percentage(qualityTotal, data.total_rows);
   const provenanceCoverage = percentage(provenanceTotal, data.total_rows);
   const featureCount = schema.all_feature_columns.length;
@@ -46,6 +39,33 @@ export default async function DataPage() {
     data.storage_temperature_bin_edges,
     "°C",
   );
+
+  const schemaRows = schema.all_feature_columns.map((column) => {
+    if (schema.numeric_columns.includes(column)) {
+      return {
+        column,
+        role: "numeric",
+        dtype: "number",
+        example: schema.numeric_ranges[column]?.median ?? "—",
+      };
+    }
+
+    if (schema.binary_columns.includes(column)) {
+      return {
+        column,
+        role: "binary",
+        dtype: "binary",
+        example: schema.control_template[column] ?? 0,
+      };
+    }
+
+    return {
+      column,
+      role: "categorical",
+      dtype: "category",
+      example: schema.categorical_modes[column] ?? schema.categorical_options[column]?.[0] ?? "—",
+    };
+  });
 
   return (
     <PageBody className="relative isolate max-w-[1480px] overflow-hidden pb-16 pt-5 sm:px-5 lg:px-7">
@@ -130,13 +150,9 @@ export default async function DataPage() {
           </Reveal>
 
           <Reveal delay={0.06}>
-            <section className="mt-4 grid gap-4 lg:grid-cols-2">
+            <section className="mt-4">
               <FancyPanel tone="amber" title="Ingredient family distribution" description="Distribution across non-control treatment rows.">
-                <FancyHorizontalBars data={familyData} tone="burgundy" height={238} />
-              </FancyPanel>
-
-              <FancyPanel tone="neutral" title="Generation-rule breakdown" description="Rows grouped by the backend provenance rule that generated them.">
-                <FancyHorizontalBars data={ruleData} tone="amber" height={238} />
+                <FancyHorizontalBars data={familyData} tone="burgundy" height={260} />
               </FancyPanel>
             </section>
           </Reveal>
@@ -152,30 +168,28 @@ export default async function DataPage() {
                     <h2 className="text-[0.9rem] font-semibold text-[#4d2634]">Schema preview</h2>
                   </div>
                   <p className="mt-2 text-[0.58rem] text-[#927f86]">
-                    Generation method: {cleanGenerationMethod(data.generation_method)} · {featureCount.toLocaleString()} model features.
+                    Generation method: {cleanGenerationMethod(data.generation_method)} · all {featureCount.toLocaleString()} model features shown below.
                   </p>
                 </div>
               </div>
 
               <div className="overflow-x-auto px-4 pb-4 pt-2">
-                <table className="w-full min-w-[720px] border-collapse text-left">
+                <table className="w-full min-w-[620px] border-collapse text-left">
                   <thead>
                     <tr className="text-[0.52rem] font-semibold uppercase tracking-[0.08em] text-[#a08d94]">
                       <th className="border-b border-[#eee4e7] px-3 py-3">Column</th>
                       <th className="border-b border-[#eee4e7] px-3 py-3">Role</th>
                       <th className="border-b border-[#eee4e7] px-3 py-3">Type</th>
-                      <th className="border-b border-[#eee4e7] px-3 py-3 text-right">Missing</th>
                       <th className="border-b border-[#eee4e7] px-3 py-3">Example</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.schema_preview.slice(0, 8).map((row) => (
+                    {schemaRows.map((row) => (
                       <tr key={row.column} className="group text-[0.65rem] transition-colors hover:bg-[#fff7f9]">
                         <td className="border-b border-[#f2e9ec] px-3 py-3 font-mono text-[#49383f]">{row.column}</td>
                         <td className="border-b border-[#f2e9ec] px-3 py-3 capitalize text-[#67565d]">{row.role}</td>
                         <td className="border-b border-[#f2e9ec] px-3 py-3 text-[#8a7880]">{row.dtype}</td>
-                        <td className="border-b border-[#f2e9ec] px-3 py-3 text-right tabular-nums text-[#67565d]">{row.missing_pct.toFixed(1)}%</td>
-                        <td className="max-w-[220px] truncate border-b border-[#f2e9ec] px-3 py-3 text-[#8a7880]">{String(row.example)}</td>
+                        <td className="max-w-[260px] truncate border-b border-[#f2e9ec] px-3 py-3 text-[#8a7880]">{formatSchemaExample(row.example)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -416,4 +430,11 @@ function formatRangeValue(value: number) {
   if (Math.abs(value) >= 100) return value.toFixed(0);
   if (Math.abs(value) >= 10) return value.toFixed(1).replace(/\.0$/, "");
   return value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+function formatSchemaExample(value: unknown) {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "number") return Number.isInteger(value) ? String(value) : formatRangeValue(value);
+  if (typeof value === "boolean") return value ? "1" : "0";
+  return String(value);
 }
