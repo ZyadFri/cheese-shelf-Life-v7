@@ -2,13 +2,15 @@
 
 import * as React from "react";
 import { animate, motion, useReducedMotion } from "framer-motion";
-import { RotateCcw, ShieldAlert, Sparkles } from "lucide-react";
+import { RotateCcw, ShieldAlert } from "lucide-react";
 
 import { usePredictionV6 } from "@/components/prediction-v6-store";
 import { titleCase } from "@/components/prediction-v6/cheese-search-step";
+import { CATEGORY_LABEL, TASK_LABEL } from "@/components/specialist-selector";
+import { PredictionExplanationSection } from "@/components/prediction-v6/prediction-explanation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { api, type PredictionSupportLevel } from "@/lib/api";
+import { api, type ExplainDetailedResponse, type PredictionSupportLevel } from "@/lib/api";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -51,16 +53,19 @@ function useCountUp(target: number, decimals = 0) {
 
 export function PredictionV6Result() {
   const { state, dispatch } = usePredictionV6();
-  const [factors, setFactors] = React.useState<{ feature: string; contribution: number }[] | null>(null);
+  const [explanation, setExplanation] = React.useState<ExplainDetailedResponse | null>(null);
   const { result, entry, baseCheeseName, physicalForm } = state;
 
   React.useEffect(() => {
     if (!result || !entry) return;
     const row = result.candidates[0]?.row;
     if (!row) return;
-    api.explainLocalV6({ cheese_category: entry.cheeseCategory, model_task: state.modelTask, row, top_k: 6 })
-      .then((response) => setFactors(response.factors))
-      .catch(() => setFactors(null));
+    // /api/v6/explain/detailed always explains svc.best_model for this
+    // exact category+task -- the same specialist and algorithm that
+    // predict_v6 actually used, never a different or legacy model.
+    api.explainDetailedV6({ cheese_category: entry.cheeseCategory, model_task: state.modelTask, row, top_k: 7 })
+      .then((response) => setExplanation(response))
+      .catch(() => setExplanation(null));
   }, [result, entry, state.modelTask]);
 
   const treated = state.treatment.ingredientName !== "none";
@@ -84,8 +89,6 @@ export function PredictionV6Result() {
   }
   if (support.physical_form && support.physical_form.level !== "strong") supportReasons.push(support.physical_form.explanation);
   if (support.routing.level === "thin_sample" && support.routing.reason) supportReasons.push(support.routing.reason);
-
-  const maxContribution = factors?.length ? Math.max(...factors.map((factor) => Math.abs(factor.contribution)), 0.0001) : 1;
 
   return (
     <div className="mx-auto max-w-[900px] pb-24 pt-7 sm:pt-9">
@@ -170,43 +173,12 @@ export function PredictionV6Result() {
         </div>
       )}
 
-      {factors && factors.length > 0 && (
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: EASE, delay: 0.22 }}
-          className="mt-6 rounded-[20px] border border-[#e8dce0] bg-[linear-gradient(145deg,#fff,#fffafb)] p-5 shadow-[0_20px_48px_-40px_rgba(80,27,43,.45)] sm:p-6"
-        >
-          <div className="flex items-center gap-2.5">
-            <span className="flex size-7 items-center justify-center rounded-full bg-[#f7e6eb] text-[#9e2446]"><Sparkles className="size-3.5" /></span>
-            <div>
-              <h2 className="text-[0.88rem] font-semibold tracking-[-0.02em] text-[#382a30]">What influenced this prediction?</h2>
-              <p className="mt-0.5 text-[0.5rem] text-[#9a858d]">Local feature contributions returned by the V6 explainability endpoint.</p>
-            </div>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {factors.map((factor) => {
-              const positive = factor.contribution >= 0;
-              return (
-                <div key={factor.feature} className="grid grid-cols-[145px_1fr_58px] items-center gap-3 sm:grid-cols-[190px_1fr_64px]">
-                  <span className="truncate text-[0.55rem] text-[#827078]">{prettify(factor.feature)}</span>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-[#f0ecee]">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(100, (Math.abs(factor.contribution) / maxContribution) * 100)}%` }}
-                      transition={{ duration: 0.5, ease: EASE }}
-                      className={`h-full rounded-full ${positive ? "bg-[#188a5a]" : "bg-[#d24234]"}`}
-                    />
-                  </div>
-                  <span className={`text-right text-[0.55rem] font-semibold tabular-nums ${positive ? "text-[#17845a]" : "text-[#d23d32]"}`}>
-                    {positive ? "+" : ""}{factor.contribution.toFixed(1)}d
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </motion.section>
+      {explanation && (
+        <PredictionExplanationSection
+          data={explanation}
+          categoryLabel={CATEGORY_LABEL[entry.cheeseCategory]}
+          taskLabel={TASK_LABEL[state.modelTask]}
+        />
       )}
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mt-7 flex justify-center">

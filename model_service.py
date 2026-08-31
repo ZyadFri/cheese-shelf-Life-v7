@@ -17,6 +17,16 @@ os.environ.setdefault("TF_ENABLE_ONEDNN_OPTS", "0")
 import joblib
 import numpy as np
 import pandas as pd
+import shap
+
+from feature_naming import (
+    BINARY_VALUE_LABELS,
+    DYNAMIC_UNIT_SOURCE,
+    FEATURE_LABELS,
+    FEATURE_UNITS,
+    aggregate_contributions_to_source,
+    humanize_value,
+)
 
 ROOT = Path(__file__).resolve().parent
 ARTIFACTS_DIR = ROOT / "artifacts"
@@ -243,6 +253,20 @@ class ModelService:
         self.models = LazyModelStore(models_dir, lstm_available=self.lstm_available)
         self._lstm_scaler_path = models_dir / "preprocessor_lstm_scaler.joblib"
         self._lstm_scaler_cache: Any = None
+
+        # Column names the tree preprocessor's one-hot encoding expands
+        # categoricals into (e.g. "cat__packaging_type_vacuum") -- needed to
+        # map SHAP's per-expanded-column values back to source features.
+        # Cheap (no model weights involved), so computed eagerly rather than
+        # deferred like the models themselves.
+        self.expanded_feature_names: list[str] = list(self.tree_pre.get_feature_names_out())
+
+        # SHAP TreeExplainer wraps an already-fitted model (no training) but
+        # its setup cost is worth paying once per model, not per request --
+        # built lazily (first actual use of that model family) so it never
+        # forces a model this specialist isn't currently using to load, the
+        # same lazy-loading guarantee LazyModelStore gives self.models.
+        self._shap_explainers: dict[str, Any] = {}
 
         # Dashboard-only lookups for auto-filling the prediction form. Built once
         # here from the exact same train split train_models.py (or
@@ -483,6 +507,233 @@ class ModelService:
             contribs = self._perturbation_local(resolved, df)
         contribs.sort(key=lambda c: abs(c["contribution"]), reverse=True)
         return contribs[:top_k]
+
+    # ── Waterfall / decomposition explanation (exact, reconciling) ───────────
+    #
+    # Unlike local_explanation() above (a ranked-influence view that never
+    # claims to sum to anything), everything below produces a decomposition
+    # verified to reconcile to the model's own prediction for this exact
+    # row: EBM's intercept_ + all local term scores (main effects and
+    # interactions) equals ebm.predict() by construction (it IS a
+    # generalized additive model); a SHAP TreeExplainer's expected_value +
+    # all per-row SHAP values equals model.predict() by the algorithm's
+    # local-accuracy guarantee (exact for tree ensembles -- not an
+    # approximation). Verified numerically against these saved artifacts:
+    # EBM/LightGBM/RandomForest reconcile to ~1e-13 days, XGBoost to
+    # ~4e-5 days (its own float32 internals), all far inside the tolerance
+    # below. `reconciles` is still recomputed per call rather than assumed,
+    # so a model family that ever lost this property would fail honestly
+    # (caller renders a plain ranking) instead of showing a wrong waterfall.
+
+    _RECONCILE_TOLERANCE_DAYS = 0.05
+
+    def _shap_explainer(self, model_name: str):
+        if model_name not in self._shap_explainers:
+            self._shap_explainers[model_name] = shap.TreeExplainer(self.models[model_name])
+        return self._shap_explainers[model_name]
+
+    def _feature_label(self, feature: str) -> str:
+        if " & " in feature:
+            return " × ".join(self._feature_label(part.strip()) for part in feature.split(" & "))
+        return FEATURE_LABELS.get(feature, feature.replace("_", " ").strip().capitalize())
+
+    def _feature_display_value(self, feature: str, row: dict[str, Any]) -> str | None:
+        """Human-readable value to show beside a factor -- e.g. "block" for
+        physical_form, "8 °C" for storage_temperature_c, "Pasteurized" for
+        pasteurization_applied. None for interaction terms (no single value)
+        and for features absent from the row."""
+        if " & " in feature:
+            return None
+        v = row.get(feature)
+        if v is None:
+            return None
+        if feature in BINARY_VALUE_LABELS:
+            try:
+                return BINARY_VALUE_LABELS[feature].get(int(float(v)), str(v))
+            except (TypeError, ValueError):
+                return str(v)
+        if feature in self.categorical_cols:
+            return humanize_value(v)
+        try:
+            v_num = float(v)
+        except (TypeError, ValueError):
+            return humanize_value(v)
+        num_str = str(int(v_num)) if v_num == int(v_num) else f"{v_num:.3g}"
+        unit_source = DYNAMIC_UNIT_SOURCE.get(feature)
+        unit = row.get(unit_source) if unit_source else FEATURE_UNITS.get(feature)
+        if unit_source and unit not in (None, "none"):
+            unit = humanize_value(unit)
+        if unit and unit != "none":
+            return f"{num_str} {unit}".strip()
+        return num_str
+
+    def explain_waterfall(self, model_name: str, row: dict[str, Any], top_k: int = 7) -> dict[str, Any]:
+        """Decomposes this exact prediction into a baseline plus per-feature
+        contributions that sum EXACTLY (within floating-point tolerance) to
+        the model's own prediction for this row."""
+        resolved = self.resolve_model_name(model_name)
+        df = self._row_to_frame(row)
+        prediction = float(self._predict_raw(resolved, df)[0])
+
+        if resolved == "ebm":
+            method = "ebm_additive"
+            X = self.ebm_pre.transform(df)
+            ebm = self.models["ebm"]
+            intercept = ebm.intercept_
+            baseline = float(intercept[0] if hasattr(intercept, "__len__") else intercept)
+            local = ebm.explain_local(X)
+            d = local.data(0)
+            raw_terms = {name: float(score) for name, score in zip(d["names"], d["scores"])}
+        else:
+            method = "shap_tree"
+            X = self.tree_pre.transform(df[self.numeric_and_binary + self.categorical_cols])
+            explainer = self._shap_explainer(resolved)
+            shap_values = explainer.shap_values(X)
+            expected = explainer.expected_value
+            baseline = float(expected[0] if hasattr(expected, "__len__") else expected)
+            per_expanded = {name: float(shap_values[0, j]) for j, name in enumerate(self.expanded_feature_names)}
+            raw_terms = aggregate_contributions_to_source(per_expanded, self.categorical_cols)
+
+        ranked = sorted(raw_terms.items(), key=lambda kv: abs(kv[1]), reverse=True)
+        steps: list[dict[str, Any]] = []
+        residual = 0.0
+        for name, contribution in ranked:
+            if len(steps) < top_k and abs(contribution) >= self._RECONCILE_TOLERANCE_DAYS:
+                steps.append({
+                    "feature": name,
+                    "label": self._feature_label(name),
+                    "value": self._feature_display_value(name, row),
+                    "contribution": contribution,
+                })
+            else:
+                residual += contribution
+
+        total = baseline + sum(s["contribution"] for s in steps) + residual
+        reconciles = abs(total - prediction) <= self._RECONCILE_TOLERANCE_DAYS
+
+        residual_step = None
+        if abs(residual) >= self._RECONCILE_TOLERANCE_DAYS:
+            residual_step = {"feature": "__residual__", "label": "All other factors", "value": None, "contribution": residual}
+
+        return {
+            "method": method,
+            "reconciles": reconciles,
+            "baseline": baseline,
+            "prediction": prediction,
+            "steps": steps,
+            "residual": residual_step,
+        }
+
+    def _numeric_range_for_display(self, feature: str, row: dict[str, Any]) -> dict[str, Any] | None:
+        """Read-only lookup mirroring assess_support()'s conditional-range
+        preference (prefer the range conditioned on this row's categorical
+        context over the pooled range) -- kept as its own copy rather than a
+        shared helper so this display-only path can never change
+        assess_support's prediction-support semantics. Returns None when no
+        range with real spread exists; callers must not show a position
+        plot for a feature this returns None for."""
+        conditional = self.schema.get("numeric_ranges_conditional", {})
+        rng = None
+        cond_spec = conditional.get(feature)
+        if cond_spec:
+            cond_cols = cond_spec["conditioned_on"]
+            key_parts = [row.get(cc) for cc in cond_cols]
+            if all(p is not None for p in key_parts):
+                key_str = "||".join(str(p) for p in key_parts)
+                rng = cond_spec["ranges"].get(key_str)
+        if rng is None:
+            rng = self.schema["numeric_ranges"].get(feature)
+        if not rng or rng["min"] >= rng["max"]:
+            return None
+        return {"min": rng["min"], "median": rng.get("median", (rng["min"] + rng["max"]) / 2), "max": rng["max"]}
+
+    def sensitivity_curve(self, model_name: str, row: dict[str, Any], feature: str, n_points: int = 12) -> dict[str, Any] | None:
+        """Real what-if curve: holds every other input fixed at this row's
+        actual values, varies only `feature` across its own training range
+        (never beyond it), and calls the exact same model for each point --
+        no interpolation, no surrogate; every (x, y) is a genuine
+        _predict_raw() call."""
+        resolved = self.resolve_model_name(model_name)
+        rng = self._numeric_range_for_display(feature, row)
+        if rng is None:
+            return None
+        try:
+            actual_x = float(row.get(feature))
+        except (TypeError, ValueError):
+            return None
+
+        xs = sorted(set(np.linspace(rng["min"], rng["max"], n_points).tolist() + [actual_x]))
+        points = []
+        for x in xs:
+            df = self._row_to_frame({**row, feature: x})
+            y = float(self._predict_raw(resolved, df)[0])
+            points.append({"x": float(x), "y": y})
+
+        actual_y = next((p["y"] for p in points if p["x"] == actual_x), None)
+        unit_source = DYNAMIC_UNIT_SOURCE.get(feature)
+        unit = row.get(unit_source) if unit_source else FEATURE_UNITS.get(feature)
+        if unit_source and unit not in (None, "none"):
+            unit = humanize_value(unit)
+
+        return {
+            "feature": feature,
+            "label": self._feature_label(feature),
+            "unit": unit if unit and unit != "none" else None,
+            "range": {"min": rng["min"], "max": rng["max"]},
+            "actual_x": actual_x,
+            "actual_y": actual_y,
+            "points": points,
+        }
+
+    # Controllable numeric inputs worth a what-if plot when meaningful for
+    # this row -- concentration is skipped by explain_detailed below when
+    # the formulation has no active ingredient (varying "% of nothing"
+    # isn't a meaningful sensitivity).
+    _SENSITIVITY_CANDIDATES = ["storage_temperature_c", "matrix_ph", "canonical_concentration_value"]
+
+    def explain_detailed(self, model_name: str, row: dict[str, Any], top_k: int = 7) -> dict[str, Any]:
+        """Single entry point for the "What influenced this prediction?"
+        section: the reconciling waterfall, each visible factor's position
+        within this specialist's training range, and a small set of real
+        what-if sensitivity curves. Always explains model_name as given by
+        the caller (svc.best_model -- the same model that actually produced
+        the prediction being explained), never a different algorithm."""
+        waterfall = self.explain_waterfall(model_name, row, top_k=top_k)
+
+        shown_features = [s["feature"] for s in waterfall["steps"] if " & " not in s["feature"]]
+        input_ranges = []
+        for feature in shown_features:
+            rng = self._numeric_range_for_display(feature, row)
+            if rng is None:
+                continue
+            try:
+                value = float(row.get(feature))
+            except (TypeError, ValueError):
+                continue
+            span = rng["max"] - rng["min"]
+            position_pct = max(0.0, min(100.0, (value - rng["min"]) / span * 100)) if span > 0 else 50.0
+            input_ranges.append({
+                "feature": feature,
+                "label": self._feature_label(feature),
+                "value": value,
+                "value_display": self._feature_display_value(feature, row),
+                "min": rng["min"],
+                "median": rng["median"],
+                "max": rng["max"],
+                "position_pct": position_pct,
+                "out_of_range": value < rng["min"] or value > rng["max"],
+            })
+
+        has_treatment = str(row.get("primary_ingredient_name", "none")) != "none"
+        sensitivity = []
+        for feature in self._SENSITIVITY_CANDIDATES:
+            if feature == "canonical_concentration_value" and not has_treatment:
+                continue
+            curve = self.sensitivity_curve(model_name, row, feature)
+            if curve is not None:
+                sensitivity.append(curve)
+
+        return {"waterfall": waterfall, "input_ranges": input_ranges, "sensitivity": sensitivity}
 
     def _reference_value(self, feature: str) -> Any:
         if feature in self.numeric_and_binary:

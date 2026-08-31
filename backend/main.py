@@ -520,6 +520,39 @@ def explain_local_v6(req: ExplainV6Request) -> dict:
     return _clean({"factors": factors, "routing": routing_meta})
 
 
+class ExplainDetailedV6Request(BaseModel):
+    cheese_category: str
+    model_task: str
+    row: dict[str, Any]
+    top_k: int = 7
+
+
+@app.post("/api/v6/explain/detailed")
+def explain_detailed_v6(req: ExplainDetailedV6Request) -> dict:
+    """Backs the redesigned "What influenced this prediction?" section: a
+    waterfall that reconciles exactly to the prediction, each shown
+    factor's position within this specialist's training range, and real
+    what-if sensitivity curves -- all from svc.best_model, the exact model
+    that produced the prediction being explained. Never the legacy global
+    ModelService."""
+    reg = _require_v6()
+    svc, routing_meta = reg.resolve(req.cheese_category, req.model_task)
+    if svc is None:
+        raise HTTPException(503, routing_meta["reason"] or "No specialist model available for this cheese category/task")
+    try:
+        detail = svc.explain_detailed(svc.best_model, req.row, top_k=req.top_k)
+    except Exception as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return _clean({
+        **detail,
+        "routing": routing_meta,
+        "cheese_category": req.cheese_category,
+        "model_task": req.model_task,
+        "model": svc.best_model,
+        "model_label": MODEL_LABELS.get(svc.best_model, svc.best_model),
+    })
+
+
 @app.get("/api/v6/models")
 def list_v6_models(category: str, task: str) -> dict:
     """Per-specialist analogue of /api/models: the training/validation/test

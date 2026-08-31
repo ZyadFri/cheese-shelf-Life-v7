@@ -634,6 +634,73 @@ export interface PredictV6Result {
   model_label: string;
 }
 
+/** One line of the waterfall: a feature's exact contribution to this
+ * prediction, plus the human label and formatted actual value to show
+ * beside it. `value` is null for EBM interaction terms (no single value
+ * to show) and for the synthetic "__residual__" bucket. */
+export interface WaterfallStep {
+  feature: string;
+  label: string;
+  value: string | null;
+  contribution: number;
+}
+
+/** A decomposition verified (per-call, not assumed) to reconcile to the
+ * model's own prediction for this row: baseline + every step's
+ * contribution + residual's contribution (if present) equals `prediction`
+ * within floating-point tolerance. `method` names which exact mechanism
+ * produced it -- never a generic "explanation". */
+export interface ExplainWaterfall {
+  method: "shap_tree" | "ebm_additive";
+  reconciles: boolean;
+  baseline: number;
+  prediction: number;
+  steps: WaterfallStep[];
+  residual: WaterfallStep | null;
+}
+
+/** Where this row's actual value for one numeric feature sits within the
+ * specialist's own training range for that feature (conditional range
+ * preferred over the pooled one, same preference assess_support uses).
+ * Only ever present for a feature with real min<max spread in the
+ * artifacts -- absence means the artifact didn't provide a reliable range,
+ * not that the value is unimportant. */
+export interface InputRangeInfo {
+  feature: string;
+  label: string;
+  value: number;
+  value_display: string | null;
+  min: number;
+  median: number;
+  max: number;
+  position_pct: number;
+  out_of_range: boolean;
+}
+
+/** A real what-if curve: every point is a genuine prediction from the same
+ * specialist/model, holding every other input fixed at this row's actual
+ * values and varying only `feature` across its own training range. */
+export interface SensitivityCurve {
+  feature: string;
+  label: string;
+  unit: string | null;
+  range: { min: number; max: number };
+  actual_x: number;
+  actual_y: number | null;
+  points: { x: number; y: number }[];
+}
+
+export interface ExplainDetailedResponse {
+  waterfall: ExplainWaterfall;
+  input_ranges: InputRangeInfo[];
+  sensitivity: SensitivityCurve[];
+  routing: RoutingMeta;
+  cheese_category: CheeseCategory;
+  model_task: ModelTask;
+  model: string;
+  model_label: string;
+}
+
 export interface RoutingV6Response {
   category: CheeseCategory;
   indicator_task_map: Record<string, ModelTask>;
@@ -695,6 +762,8 @@ export const api = {
       "/api/v6/explain/local",
       { method: "POST", body: JSON.stringify(body) },
     ),
+  explainDetailedV6: (body: { cheese_category: CheeseCategory; model_task: ModelTask; row: Record<string, unknown>; top_k?: number }) =>
+    request<ExplainDetailedResponse>("/api/v6/explain/detailed", { method: "POST", body: JSON.stringify(body) }),
   v6Models: (category: CheeseCategory, task: ModelTask) =>
     request<SpecialistModelsResponse>(`/api/v6/models?category=${category}&task=${task}`),
   v6ModelDetails: (category: CheeseCategory, task: ModelTask, model: string) =>
