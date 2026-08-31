@@ -10,7 +10,6 @@ import {
   ListOrdered,
   Lightbulb,
   BookOpenText,
-  Library,
   Tags,
   Leaf,
 } from "lucide-react";
@@ -35,7 +34,6 @@ const PAGES = [
   { href: "/app/ingredients", label: "Ingredient efficacy", icon: Leaf },
   { href: "/app/explainability", label: "Explainability", icon: Lightbulb },
   { href: "/app/how-it-works", label: "How it works", icon: BookOpenText },
-  { href: "/app/references", label: "References", icon: Library },
 ];
 
 const MODELS = ["Random Forest", "LightGBM", "XGBoost", "Explainable Boosting Machine", "LSTM"];

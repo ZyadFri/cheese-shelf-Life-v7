@@ -49,7 +49,6 @@ const NAV_GROUPS = [
     label: "Reference",
     items: [
       { href: "/app/how-it-works", label: "How it works" },
-      { href: "/app/references", label: "References" },
     ],
   },
 ] as const;

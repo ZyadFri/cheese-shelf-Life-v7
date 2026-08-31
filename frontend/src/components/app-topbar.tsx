@@ -2,7 +2,6 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import {
-  BookOpen,
   Bot,
   ChevronRight,
   Database,
@@ -39,7 +38,6 @@ const ROUTES: Record<string, { label: string; icon: typeof Home }> = {
   "/app/explainability": { label: "Explainability", icon: Lightbulb },
   "/app/how-it-works": { label: "How it works", icon: Sparkles },
   "/app/project-guide": { label: "Project Guide", icon: Bot },
-  "/app/references": { label: "References", icon: BookOpen },
   "/app/account": { label: "Account", icon: Home },
 };
 
