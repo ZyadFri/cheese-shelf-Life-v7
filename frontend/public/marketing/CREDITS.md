@@ -55,18 +55,8 @@ Files are downloaded and optimised by `scripts/fetch-marketing-images.py` unless
 
 # Team information
 
-## allahdad.jpg
-- Portrait of Zahra Allahdad, PhD, Research Associate, Karboune Lab (2022-present).
-  Title/affiliation verified against the Karboune Lab's own official team page:
-  https://www.karboune-group.lab.mcgill.ca/our-team1-1 (accessed 2026-08-26). Photo
-  supplied directly by the project owner for use in this project.
-
-## benabbou.jpg
-- Portrait of Loubna Benabbou, PhD, Research Chair Professor of Artificial Intelligence
-  for Supply Chain Management, Universite du Quebec a Rimouski (UQAR). Title, affiliation,
-  and bio supplied directly by the project owner (condensed from her own written bio for
-  the landing page; not independently sourced, per the project owner's own preference).
-  Photo supplied directly by the project owner for use in this project.
+The landing page intentionally does not publish portraits for Zahra Allahdad or
+Loubna Benabbou. Their cards use non-photographic monogram artwork instead.
 
 # Social media links
 
