@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 
 import { usePredictionV6, NO_TREATMENT } from "@/components/prediction-v6-store";
+import { addPredictionToHistory } from "@/lib/prediction-v6-history";
 import { titleCase } from "@/components/prediction-v6/cheese-search-step";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -117,7 +118,7 @@ export function PredictionConditionsStep() {
     !state.indicatorGroup || !state.indicatorType || !state.indicatorUnit || state.indicatorThreshold === null || state.initialIndicatorValue === null || treatmentMissing;
 
   async function handleSubmit() {
-    if (requiredMissing || submitting || !entry) return;
+    if (requiredMissing || submitting || !entry || !baseCheeseName) return;
     const primaryConcentration = state.treatment.ingredientName === "none" ? 0 : state.treatment.concentration;
     const pasteurizationApplied = state.pasteurizationApplied;
     if (primaryConcentration === null || pasteurizationApplied === null) return;
@@ -157,6 +158,14 @@ export function PredictionConditionsStep() {
       });
 
       dispatch({ type: "setResult", result });
+      addPredictionToHistory({
+        cheeseName: titleCase(baseCheeseName),
+        cheeseCategory: entry.cheeseCategory,
+        modelTask: state.modelTask,
+        physicalForm,
+        treated: state.treatment.ingredientName !== "none",
+        result,
+      });
       toast.success("Prediction complete");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Prediction failed");
