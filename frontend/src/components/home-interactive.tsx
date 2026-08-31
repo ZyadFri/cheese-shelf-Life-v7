@@ -7,9 +7,12 @@ export type PredictionExample = {
   title: string;
   subtitle: string;
   image: string;
-  predictedDays: number;
+  shelfLifeDays: number;
   condition: string;
   sourceLabel: string;
+  badgeLabel?: string;
+  valueLabel?: string;
+  ctaLabel?: string;
 };
 
 export function DemoVideo({ src, poster }: { src: string; poster: string }) {
@@ -92,7 +95,7 @@ export function PredictionCarousel({ items }: { items: PredictionExample[] }) {
       <button
         type="button"
         onClick={() => move(-1)}
-        aria-label="Previous prediction examples"
+        aria-label="Previous result examples"
         className="absolute -left-2 top-[38%] z-10 hidden size-9 -translate-y-1/2 place-items-center rounded-full border border-[#ead9df] bg-white/96 text-xl leading-none text-[#8d2a48] shadow-[0_10px_26px_-18px_rgba(90,31,49,.55)] transition-all hover:-translate-x-0.5 hover:border-[#d9b4c0] sm:grid"
       >
         ‹
@@ -124,15 +127,15 @@ export function PredictionCarousel({ items }: { items: PredictionExample[] }) {
                   <p className="mt-0.5 truncate text-[0.56rem] text-[#98858c]">{item.subtitle}</p>
                 </div>
                 <span className="shrink-0 rounded-full bg-[#fff0f4] px-2 py-1 text-[0.49rem] font-semibold text-[#9a3653]">
-                  Model output
+                  {item.badgeLabel ?? "Literature benchmark"}
                 </span>
               </div>
 
               <div className="mt-3 flex items-end justify-between gap-3 border-t border-[#f1e8eb] pt-3">
                 <div>
-                  <span className="block text-[0.5rem] text-[#a08a92]">Predicted shelf life</span>
+                  <span className="block text-[0.5rem] text-[#a08a92]">{item.valueLabel ?? "Reported shelf life"}</span>
                   <strong className="mt-0.5 block text-[1.16rem] font-semibold tracking-[-0.04em] text-[#8d1d3d]">
-                    {item.predictedDays.toFixed(1)} days
+                    {item.shelfLifeDays.toFixed(1)} days
                   </strong>
                 </div>
                 <span className="max-w-[42%] text-right text-[0.5rem] leading-4 text-[#8f7a82]">{item.condition}</span>
@@ -140,7 +143,7 @@ export function PredictionCarousel({ items }: { items: PredictionExample[] }) {
 
               <div className="mt-2.5 flex items-center justify-between gap-3 text-[0.49rem] text-[#a08b93]">
                 <span>{item.sourceLabel}</span>
-                <span className="font-semibold text-[#8c2947]">Open results →</span>
+                <span className="font-semibold text-[#8c2947]">{item.ctaLabel ?? "Explore results →"}</span>
               </div>
             </div>
           </Link>
@@ -150,7 +153,7 @@ export function PredictionCarousel({ items }: { items: PredictionExample[] }) {
       <button
         type="button"
         onClick={() => move(1)}
-        aria-label="Next prediction examples"
+        aria-label="Next result examples"
         className="absolute -right-2 top-[38%] z-10 hidden size-9 -translate-y-1/2 place-items-center rounded-full border border-[#ead9df] bg-white/96 text-xl leading-none text-[#8d2a48] shadow-[0_10px_26px_-18px_rgba(90,31,49,.55)] transition-all hover:translate-x-0.5 hover:border-[#d9b4c0] sm:grid"
       >
         ›
