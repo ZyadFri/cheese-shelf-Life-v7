@@ -52,7 +52,7 @@ const PREDICTION_EXAMPLES: PredictionExample[] = [
 const DRIVER_EXAMPLES = ["Moisture", "Salt", "pH", "Storage temperature"] as const;
 
 export default async function HomePage() {
-  const [manifest, synthetic] = await Promise.all([api.manifest(), api.datasetSynthetic()]);
+  const manifest = await api.manifest();
 
   const atAGlance = [
     {
@@ -110,14 +110,6 @@ export default async function HomePage() {
             >
               Explore results&nbsp;&nbsp;→
             </Link>
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-[0.56rem] text-[#9a858d]">
-            <span>Real + synthetic research data</span>
-            <span className="hidden text-[#d0b8c0] sm:inline">•</span>
-            <span>
-              Current shelf-life span {synthetic.target_min.toFixed(0)}–{synthetic.target_max.toFixed(0)} days
-            </span>
           </div>
         </div>
 
@@ -240,7 +232,6 @@ export default async function HomePage() {
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3 px-1">
             <div>
               <p className="text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-[#965b6e]">Example predictions</p>
-              <p className="mt-1 text-[0.62rem] text-[#99858d]">Real model outputs already saved in the V7 external-test artifact, paired with real cheese imagery.</p>
             </div>
             <Link href="/app/results" className="text-[0.58rem] font-semibold text-[#8c2847] hover:underline">
               View all results&nbsp;&nbsp;→
