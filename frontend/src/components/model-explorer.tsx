@@ -2,25 +2,39 @@
 
 import * as React from "react";
 
-import { api, type ModelSummary, type ModelDetails } from "@/lib/api";
+import type { ModelSummary, ModelDetails } from "@/lib/api";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LineCurveChart } from "@/components/charts/line-curve-chart";
 import { BarHChart } from "@/components/charts/bar-h-chart";
 import { ActualVsPredictedChart } from "@/components/charts/scatter-chart";
 
-export function ModelExplorer({ models }: { models: ModelSummary[] }) {
+export function ModelExplorer({
+  models,
+  fetchDetails,
+}: {
+  models: ModelSummary[];
+  /** Left to the caller so this component stays agnostic to which
+   * specialist (cheese_category x model_task) or legacy model set it's
+   * exploring -- it only knows how to render a ModelDetails payload. */
+  fetchDetails: (modelId: string) => Promise<ModelDetails>;
+}) {
   const [active, setActive] = React.useState(models[0]?.id ?? "");
   const [cache, setCache] = React.useState<Record<string, ModelDetails>>({});
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
+    setActive(models[0]?.id ?? "");
+    setCache({});
+  }, [models]);
+
+  React.useEffect(() => {
     if (!active || cache[active]) return;
     setLoading(true);
-    api.modelDetails(active)
+    fetchDetails(active)
       .then((details) => setCache((prev) => ({ ...prev, [active]: details })))
       .finally(() => setLoading(false));
-  }, [active, cache]);
+  }, [active, cache, fetchDetails]);
 
   const details = cache[active];
 
@@ -145,7 +159,6 @@ function DetailsPanel({ details }: { details: ModelDetails }) {
 
       <DiagnosticCard
         title="Permutation importance"
-        subtitle="cross-model consistent"
         className="overflow-hidden bg-[radial-gradient(circle_at_88%_18%,rgba(208,104,135,.18),transparent_34%),linear-gradient(145deg,#fff,#fff1f5)]"
       >
         <BarHChart data={permutation} color="#a32348" height={205} labelWidth={105} />

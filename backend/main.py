@@ -520,6 +520,63 @@ def explain_local_v6(req: ExplainV6Request) -> dict:
     return _clean({"factors": factors, "routing": routing_meta})
 
 
+@app.get("/api/v6/models")
+def list_v6_models(category: str, task: str) -> dict:
+    """Per-specialist analogue of /api/models: the training/validation/test
+    comparison for the one ModelService that actually serves this
+    cheese_category x model_task combination (never the retired global
+    model). Every value is read straight from that specialist's own
+    metrics.json / training_manifest.json on disk -- nothing here is
+    recomputed or retrained."""
+    reg = _require_v6()
+    svc, routing_meta = reg.resolve(category, task)
+    if svc is None:
+        raise HTTPException(404, routing_meta["reason"] or "No specialist available for this category/task")
+    ranked = sorted(svc.metrics.keys(), key=lambda m: svc.metrics[m]["validation_rmse"])
+    rows = []
+    for m in ranked:
+        met = svc.metrics[m]
+        rows.append({
+            "id": m, "label": MODEL_LABELS.get(m, m), "blurb": MODEL_BLURBS.get(m, ""),
+            "is_best": m == svc.best_model,
+            "validation_r2": met["validation_r2"], "test_r2": met["test_r2"],
+            "validation_rmse": met["validation_rmse"], "test_rmse": met["test_rmse"],
+            "validation_mae": met["validation_mae"], "test_mae": met["test_mae"],
+            "training_duration_sec": met["training_duration_sec"],
+            "n_trainable_params": met.get("n_trainable_params"),
+        })
+    return _clean({
+        "best_model": svc.best_model,
+        "models": rows,
+        "manifest": svc.manifest,
+        "routing": routing_meta,
+    })
+
+
+@app.get("/api/v6/models/{model}/details")
+def v6_model_details(model: str, category: str, task: str) -> dict:
+    reg = _require_v6()
+    svc, routing_meta = reg.resolve(category, task)
+    if svc is None:
+        raise HTTPException(404, routing_meta["reason"] or "No specialist available for this category/task")
+    if model not in svc.metrics:
+        raise HTTPException(404, f"Unknown model: {model}")
+    m = svc.metrics[model]
+    preds = svc.predictions.query("model == @model")
+    scatter = {
+        split: preds[preds["split"] == split][["y_true", "y_pred"]].to_dict("records")
+        for split in ("train", "validation", "test")
+    }
+    return _clean({
+        "id": model, "label": MODEL_LABELS.get(model, model),
+        "metrics": m,
+        "curves": svc.curves.get(model),
+        "feature_importance": svc.feature_importance.get(model, {}),
+        "category_errors": svc.category_errors.get(model, {}),
+        "scatter": scatter,
+    })
+
+
 # ── Classification (formulation+treatment efficacy class) ──────────────────
 #
 # Independent of the regression models above: reads only from

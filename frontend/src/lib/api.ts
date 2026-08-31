@@ -156,6 +156,33 @@ export interface ModelDetails {
   };
 }
 
+/** training_manifest.json for one V6 specialist (cheese_category x
+ * model_task) -- distinct shape from the legacy ManifestData above: no
+ * real/synthetic split (specialists don't carry that distinction) and it
+ * carries its own category/task identity. */
+export interface SpecialistManifest {
+  created_at_utc: string;
+  random_seed: number;
+  cheese_category: CheeseCategory;
+  model_task: ModelTask;
+  dataset_path: string;
+  n_total: number;
+  n_train: number;
+  n_validation: number;
+  n_test: number;
+  models_trained: string[];
+  best_model_by_validation_rmse: string;
+  total_training_duration_sec: number;
+  thin_split: boolean;
+}
+
+export interface SpecialistModelsResponse {
+  best_model: string;
+  models: ModelSummary[];
+  manifest: SpecialistManifest;
+  routing: RoutingMeta;
+}
+
 export interface SyntheticDataset {
   total_rows: number;
   contexts: number;
@@ -668,6 +695,10 @@ export const api = {
       "/api/v6/explain/local",
       { method: "POST", body: JSON.stringify(body) },
     ),
+  v6Models: (category: CheeseCategory, task: ModelTask) =>
+    request<SpecialistModelsResponse>(`/api/v6/models?category=${category}&task=${task}`),
+  v6ModelDetails: (category: CheeseCategory, task: ModelTask, model: string) =>
+    request<ModelDetails>(`/api/v6/models/${model}/details?category=${category}&task=${task}`),
 
   // ── classification ─────────────────────────────────────────────────────
   classificationHealth: () => request<{ available: boolean; best_model?: string; models?: string[] }>("/api/classification/health"),
