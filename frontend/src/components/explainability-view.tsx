@@ -14,14 +14,20 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import { api, type ModelSummary, type ModelDetails } from "@/lib/api";
-import { usePredictionStore } from "@/components/prediction-store";
+import { api, type CheeseCategory, type ModelTask, type ModelDetails, type SpecialistModelsResponse } from "@/lib/api";
+import { getPredictionHistory, type PredictionHistoryEntry } from "@/lib/prediction-v6-history";
+import { SpecialistSelector, CATEGORY_LABEL, TASK_LABEL } from "@/components/specialist-selector";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarHChart } from "@/components/charts/bar-h-chart";
 import { LineCurveChart } from "@/components/charts/line-curve-chart";
 
-const SEGMENT_PRIORITY = ["cheese_category", "food_matrix", "indicator_type", "is_control"] as const;
+/** Real dimensions stored in every specialist's category_errors.json
+ * (verified identical across all 6 specialists) -- cheese_category is
+ * deliberately absent: it's constant within a specialist (fixed by
+ * routing), so it was never a trained feature and never a breakdown
+ * dimension to begin with. */
+const SEGMENT_PRIORITY = ["food_matrix", "indicator_type", "is_control", "physical_form"] as const;
 
 const SEGMENT_TONES = [
   { bar: "#a52348", soft: "#fff1f5", icon: "#9e2144" },
@@ -30,37 +36,37 @@ const SEGMENT_TONES = [
   { bar: "#58a776", soft: "#f2fbf5", icon: "#3c8a5a" },
 ] as const;
 
-export function ExplainabilityView({
-  models,
-  featureCount,
-}: {
-  models: ModelSummary[];
-  featureCount: number;
-}) {
-  const [active, setActive] = React.useState(models[0]?.id ?? "");
-  const [cache, setCache] = React.useState<Record<string, ModelDetails>>({});
-  const [loading, setLoading] = React.useState(false);
-  const [ebmShapes, setEbmShapes] = React.useState<
-    { term: string; type: string; names: string[]; scores: number[] }[] | null
-  >(null);
+export function ExplainabilityView() {
+  const [category, setCategory] = React.useState<CheeseCategory>("hard");
+  const [task, setTask] = React.useState<ModelTask>("general_shelf_life");
+  const [data, setData] = React.useState<SpecialistModelsResponse | null>(null);
+  const [featureCount, setFeatureCount] = React.useState<number | null>(null);
+  const [loadingSpecialist, setLoadingSpecialist] = React.useState(true);
+  const [specialistError, setSpecialistError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    if (!active || cache[active]) return;
-    setLoading(true);
-    api.modelDetails(active)
-      .then((details) => setCache((prev) => ({ ...prev, [active]: details })))
-      .finally(() => setLoading(false));
-  }, [active, cache]);
-
-  React.useEffect(() => {
-    if (active === "ebm" && !ebmShapes) {
-      api.ebmShapes().then((response) => setEbmShapes(response.shapes));
-    }
-  }, [active, ebmShapes]);
-
-  const details = cache[active];
-  const segmentCount = details ? Object.keys(details.category_errors).length : null;
-  const testObservations = details?.scatter.test.length ?? null;
+    let active = true;
+    setLoadingSpecialist(true);
+    setSpecialistError(null);
+    Promise.all([api.v6Models(category, task), api.schemaV6(category, task)])
+      .then(([modelsResponse, schema]) => {
+        if (!active) return;
+        setData(modelsResponse);
+        setFeatureCount(schema.all_feature_columns.length);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setData(null);
+        setFeatureCount(null);
+        setSpecialistError(err instanceof Error ? err.message : "This specialist has no saved artifacts yet.");
+      })
+      .finally(() => {
+        if (active) setLoadingSpecialist(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [category, task]);
 
   return (
     <div className="relative">
@@ -77,48 +83,118 @@ export function ExplainabilityView({
             Explainability
           </h1>
           <p className="mt-3 max-w-[760px] text-[0.72rem] leading-5 text-[#74666c] sm:text-[0.78rem]">
-            Understand how each model makes its predictions, globally and for individual formulations.
+            Understand how each specialist makes its predictions, globally and for individual formulations.
           </p>
-
-          <div className="mt-5 grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
-            <SummaryCard
-              label="Global drivers tracked"
-              value={featureCount.toLocaleString()}
-              sub="Features exposed by the current schema"
-              icon={<Database className="size-4" />}
-            />
-            <SummaryCard
-              label="Model families explained"
-              value={models.length.toLocaleString()}
-              sub="Available model artifacts"
-              icon={<ListTree className="size-4" />}
-            />
-            <SummaryCard
-              label="Test observations"
-              value={testObservations === null ? "—" : testObservations.toLocaleString()}
-              sub={details ? "Stored for the selected model" : "Loading selected model"}
-              icon={<GitCompare className="size-4" />}
-            />
-            <SummaryCard
-              label="Segment diagnostics"
-              value={segmentCount === null ? "—" : segmentCount.toLocaleString()}
-              sub={details ? "Backend error-breakdown dimensions" : "Loading selected model"}
-              icon={<ShieldCheck className="size-4" />}
-            />
-          </div>
         </div>
       </section>
 
+      <div className="relative z-10 mt-3">
+        <SpecialistSelector category={category} task={task} onCategoryChange={setCategory} onTaskChange={setTask} />
+      </div>
+
+      {specialistError ? (
+        <section className="mt-3 flex min-h-[200px] items-center justify-center rounded-[20px] border border-[#eadfe3] bg-white/94 p-8 text-center shadow-[0_18px_48px_-40px_rgba(76,27,44,.42)]">
+          <p className="max-w-sm text-[0.68rem] text-[#8e7d84]">
+            No saved artifacts for {CATEGORY_LABEL[category]} · {TASK_LABEL[task]} yet. Train it via <code className="font-mono">python train_specialists.py</code>.
+          </p>
+        </section>
+      ) : loadingSpecialist || !data || featureCount === null ? (
+        <div className="mt-3 grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[86px] w-full rounded-[17px]" />)}
+        </div>
+      ) : (
+        <SpecialistExplainability category={category} task={task} data={data} featureCount={featureCount} />
+      )}
+
+      <section className="mt-3 grid gap-3 xl:grid-cols-[1.55fr_.7fr_.72fr]">
+        <LocalExplanationCard />
+        <FormulationContextCard />
+        <HowToReadCard />
+      </section>
+    </div>
+  );
+}
+
+function SpecialistExplainability({
+  category,
+  task,
+  data,
+  featureCount,
+}: {
+  category: CheeseCategory;
+  task: ModelTask;
+  data: SpecialistModelsResponse;
+  featureCount: number;
+}) {
+  const models = data.models;
+  const [active, setActive] = React.useState(models[0]?.id ?? "");
+  const [cache, setCache] = React.useState<Record<string, ModelDetails>>({});
+  const [loading, setLoading] = React.useState(false);
+  const [ebmShapes, setEbmShapes] = React.useState<
+    { term: string; type: string; names: string[]; scores: number[] }[] | null
+  >(null);
+
+  // A new specialist means a fresh model set and none of the previous
+  // specialist's cached details/EBM shapes apply anymore.
+  React.useEffect(() => {
+    setActive(models[0]?.id ?? "");
+    setCache({});
+    setEbmShapes(null);
+  }, [category, task, models]);
+
+  React.useEffect(() => {
+    if (!active || cache[active]) return;
+    setLoading(true);
+    api.v6ModelDetails(category, task, active)
+      .then((details) => setCache((prev) => ({ ...prev, [active]: details })))
+      .finally(() => setLoading(false));
+  }, [active, cache, category, task]);
+
+  React.useEffect(() => {
+    if (active === "ebm" && !ebmShapes) {
+      api.v6EbmShapes(category, task).then((response) => setEbmShapes(response.shapes));
+    }
+  }, [active, ebmShapes, category, task]);
+
+  const details = cache[active];
+  const segmentDimensions = details ? Object.keys(details.category_errors).filter((key) => key !== "cheese_category") : null;
+  const testObservations = details?.scatter.test.length ?? null;
+
+  return (
+    <>
+      <section className="relative z-10 mt-3 grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard
+          label="Features used by this specialist"
+          value={featureCount.toLocaleString()}
+          sub={`${CATEGORY_LABEL[category]} · ${TASK_LABEL[task]} schema`}
+          icon={<Database className="size-4" />}
+        />
+        <SummaryCard
+          label="Algorithms available"
+          value={models.length.toLocaleString()}
+          sub="Trained for this specialist"
+          icon={<ListTree className="size-4" />}
+        />
+        <SummaryCard
+          label="Specialist test observations"
+          value={testObservations === null ? "—" : testObservations.toLocaleString()}
+          sub={details ? "Held-out rows for the selected algorithm" : "Loading selected algorithm"}
+          icon={<GitCompare className="size-4" />}
+        />
+        <SummaryCard
+          label="Diagnostic dimensions"
+          value={segmentDimensions === null ? "—" : segmentDimensions.length.toLocaleString()}
+          sub={details ? "Backend error-breakdown dimensions" : "Loading selected algorithm"}
+          icon={<ShieldCheck className="size-4" />}
+        />
+      </section>
+
       <section className="relative z-10 mt-3 overflow-hidden rounded-[20px] border border-[#eadfe3] bg-white/94 shadow-[0_20px_52px_-42px_rgba(78,28,44,.42)]">
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#eee5e8] px-4 py-3.5 sm:px-5">
-          <div>
-            <h2 className="text-[0.86rem] font-semibold tracking-[-0.015em] text-[#241b1f]">Global feature importance</h2>
-            <p className="mt-0.5 text-[0.58rem] text-[#928087]">Compare how features influence predictions across supported model families.</p>
-          </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#eddde2] bg-[#fff8fa] px-2.5 py-1 text-[0.48rem] font-medium text-[#92717c]">
-            <Info className="size-3 text-[#a83b59]" />
-            Permutation importance uses cross-model consistency
-          </span>
+        <div className="border-b border-[#eee5e8] px-4 py-3.5 sm:px-5">
+          <h2 className="text-[0.86rem] font-semibold tracking-[-0.015em] text-[#241b1f]">Global feature importance</h2>
+          <p className="mt-0.5 text-[0.58rem] text-[#928087]">
+            {CATEGORY_LABEL[category]} · {TASK_LABEL[task]} — compare how features influence this specialist's predictions across its trained algorithms.
+          </p>
         </div>
 
         <div className="p-3.5 sm:p-4">
@@ -153,21 +229,17 @@ export function ExplainabilityView({
         </div>
       </section>
 
-      <section className="mt-3 grid gap-3 xl:grid-cols-[1.55fr_.7fr_.72fr]">
-        <LocalExplanationCard />
-        <FormulationContextCard />
-        <HowToReadCard />
-      </section>
-
-      {details && Object.keys(details.category_errors).length > 0 && (
-        <SegmentInsights details={details} />
+      {details && segmentDimensions && segmentDimensions.length > 0 && (
+        <SegmentInsights details={details} dimensions={segmentDimensions} />
       )}
 
       {active === "ebm" && (
         <section className="mt-3 overflow-hidden rounded-[20px] border border-[#eadfe3] bg-white/94 shadow-[0_18px_48px_-40px_rgba(76,27,44,.40)]">
           <div className="border-b border-[#eee5e8] px-4 py-3.5 sm:px-5">
             <h2 className="text-[0.82rem] font-semibold text-[#241b1f]">EBM shape functions</h2>
-            <p className="mt-0.5 text-[0.56rem] text-[#928087]">Stored additive shape functions for the selected Explainable Boosting Machine.</p>
+            <p className="mt-0.5 text-[0.56rem] text-[#928087]">
+              Stored additive shape functions for {CATEGORY_LABEL[category]} · {TASK_LABEL[task]}&apos;s Explainable Boosting Machine.
+            </p>
           </div>
           <div className="p-4">
             {!ebmShapes ? (
@@ -188,7 +260,7 @@ export function ExplainabilityView({
           </div>
         </section>
       )}
-    </div>
+    </>
   );
 }
 
@@ -209,7 +281,7 @@ function ImportancePanel({ details }: { details: ModelDetails }) {
     <div className="grid gap-3 lg:grid-cols-2">
       <ImportanceCard
         title="Permutation importance"
-        subtitle="Relative influence across the selected model"
+        subtitle="Relative influence across the selected algorithm"
         tone="burgundy"
       >
         <BarHChart data={permutation} color="#a32348" height={268} labelWidth={132} />
@@ -264,50 +336,60 @@ function ImportanceCard({
 }
 
 function LocalExplanationCard() {
-  const { lastPrediction } = usePredictionStore();
+  const [entry, setEntry] = React.useState<PredictionHistoryEntry | null | undefined>(undefined);
   const [factors, setFactors] = React.useState<{ feature: string; contribution: number }[] | null>(null);
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (!lastPrediction) {
+    setEntry(getPredictionHistory()[0] ?? null);
+  }, []);
+
+  React.useEffect(() => {
+    if (!entry) {
       setFactors(null);
       return;
     }
-    const top = lastPrediction.candidates[0];
-    if (!top) return;
+    const candidate = entry.result.candidates[0];
+    if (!candidate) return;
     setLoading(true);
-    api.explainLocal({ model: top.model, row: top.row, top_k: 8 })
+    // Specialist-aware: explains the exact row from the exact specialist
+    // that produced this prediction (/api/v6/explain/local always uses
+    // that specialist's own best_model -- the same model predict_v6 used),
+    // never the retired global /api/explain/local.
+    api.explainLocalV6({ cheese_category: entry.cheeseCategory, model_task: entry.modelTask, row: candidate.row, top_k: 8 })
       .then((response) => setFactors(response.factors))
       .finally(() => setLoading(false));
-  }, [lastPrediction]);
+  }, [entry]);
 
-  const top = lastPrediction?.candidates[0];
+  const candidate = entry?.result.candidates[0];
 
   return (
     <article className="relative min-h-[252px] overflow-hidden rounded-[20px] border border-[#eadfe3] bg-[linear-gradient(145deg,#fff,#fffafb)] p-4 shadow-[0_18px_48px_-40px_rgba(76,27,44,.42)] sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-[0.82rem] font-semibold text-[#241b1f]">Local explanation for a formulation</h2>
-          <p className="mt-0.5 text-[0.55rem] text-[#928087]">Feature contributions returned for your most recent prediction.</p>
+          <p className="mt-0.5 text-[0.55rem] text-[#928087]">Feature contributions returned for your most recent prediction, from the specialist that produced it.</p>
         </div>
         <FlaskConical className="size-4 text-[#a42a4d]" />
       </div>
 
-      {!top ? (
+      {entry === undefined ? (
+        <Skeleton className="mt-4 h-[176px] rounded-[16px]" />
+      ) : !candidate ? (
         <div className="mt-5 flex min-h-[170px] flex-col items-center justify-center rounded-[16px] border border-dashed border-[#e8d9de] bg-[#fff8fa]/72 px-5 text-center">
           <div className="flex size-10 items-center justify-center rounded-full bg-[#f7e8ed] text-[#9e2144]">
             <FlaskConical className="size-4" />
           </div>
           <p className="mt-3 text-[0.66rem] font-semibold text-[#44353b]">No prediction yet</p>
-          <p className="mt-1 max-w-[380px] text-[0.52rem] leading-4 text-[#927f87]">Run a prediction to populate this panel with formulation-specific contributions from the backend explanation endpoint.</p>
+          <p className="mt-1 max-w-[380px] text-[0.52rem] leading-4 text-[#927f87]">Run a prediction to populate this panel with formulation-specific contributions from the routed specialist.</p>
         </div>
       ) : loading || !factors ? (
         <Skeleton className="mt-4 h-[176px] rounded-[16px]" />
       ) : (
         <ContributionView
           factors={factors}
-          prediction={top.predicted_candidate_shelf_life}
-          candidateName={top.candidate_name}
+          prediction={candidate.predicted_candidate_shelf_life}
+          candidateName={candidate.candidate_name}
         />
       )}
     </article>
@@ -367,9 +449,17 @@ function ContributionView({
 }
 
 function FormulationContextCard() {
-  const { lastPrediction } = usePredictionStore();
-  const top = lastPrediction?.candidates[0];
-  const context = top ? buildContext(top.row) : [];
+  const [entry, setEntry] = React.useState<PredictionHistoryEntry | null | undefined>(undefined);
+
+  React.useEffect(() => {
+    setEntry(getPredictionHistory()[0] ?? null);
+  }, []);
+
+  const candidate = entry?.result.candidates[0];
+  const context = React.useMemo(() => {
+    if (!entry || !candidate) return [];
+    return buildContext(candidate.row, entry.cheeseCategory, entry.physicalForm);
+  }, [entry, candidate]);
 
   return (
     <article className="min-h-[252px] rounded-[20px] border border-[#eadfe3] bg-[linear-gradient(145deg,#fff,#fffaf6)] p-4 shadow-[0_18px_48px_-40px_rgba(76,27,44,.38)]">
@@ -398,12 +488,12 @@ function HowToReadCard() {
   const items = [
     {
       title: "Global explanations",
-      text: "Reveal which features influence predictions across the dataset and compare importance methods.",
+      text: "Reveal which features influence the selected specialist's predictions and compare importance methods across its algorithms.",
       icon: <Lightbulb className="size-3.5" />,
     },
     {
       title: "Local explanations",
-      text: "Show why the latest formulation received its prediction by exposing feature contributions.",
+      text: "Show why the latest formulation received its prediction by exposing feature contributions from the specialist that produced it.",
       icon: <FlaskConical className="size-3.5" />,
     },
     {
@@ -435,8 +525,9 @@ function HowToReadCard() {
   );
 }
 
-function SegmentInsights({ details }: { details: ModelDetails }) {
-  const entries = prioritizedSegments(details.category_errors).slice(0, 4);
+function SegmentInsights({ details, dimensions }: { details: ModelDetails; dimensions: string[] }) {
+  const filtered = Object.fromEntries(dimensions.map((key) => [key, details.category_errors[key]]));
+  const entries = prioritizedSegments(filtered).slice(0, 4);
 
   return (
     <section className="mt-3 overflow-hidden rounded-[20px] border border-[#eadfe3] bg-white/94 p-3.5 shadow-[0_18px_48px_-40px_rgba(76,27,44,.38)] sm:p-4">
@@ -445,7 +536,7 @@ function SegmentInsights({ details }: { details: ModelDetails }) {
           <div className="flex size-7 items-center justify-center rounded-full bg-[#f8e9ef] text-[#a12348]"><Sparkles className="size-3.5" /></div>
           <div>
             <h2 className="text-[0.76rem] font-semibold text-[#281f22]">Segment insights</h2>
-            <p className="mt-0.5 text-[0.49rem] text-[#918087]">Highest stored test MAE within each available backend category breakdown.</p>
+            <p className="mt-0.5 text-[0.49rem] text-[#918087]">Highest stored test MAE within each available backend category breakdown for this specialist.</p>
           </div>
         </div>
         <span className="rounded-full border border-[#eadde1] bg-[#fff9fb] px-2.5 py-1 text-[0.46rem] font-medium text-[#8c6170]">Backend-derived breakdown</span>
@@ -476,21 +567,24 @@ function SegmentCard({
     <article className="rounded-[15px] border border-[#eee4e7] p-3" style={{ background: `linear-gradient(145deg,#fff,${tone.soft})` }}>
       <p className="text-[0.5rem] font-semibold text-[#5a474f]">By {humanize(column)} <span className="font-normal text-[#9a858d]">(highest MAE)</span></p>
       <div className="mt-2.5 space-y-2">
-        {rows.map(([label, value], index) => (
-          <div key={label} className="grid grid-cols-[12px_minmax(0,1fr)_62px] items-center gap-2">
-            <span className="text-[0.43rem] text-[#a18e95]">{index + 1}</span>
-            <div className="min-w-0">
-              <p className="truncate text-[0.45rem] text-[#55434a]" title={humanize(label)}>{humanize(label)}</p>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/80">
-                <div className="h-full rounded-full" style={{ width: `${Math.max(5, (value.mae / max) * 100)}%`, background: tone.bar }} />
+        {rows.map(([label, value], index) => {
+          const displayLabel = column === "is_control" ? controlLabel(label) : humanize(label);
+          return (
+            <div key={label} className="grid grid-cols-[12px_minmax(0,1fr)_62px] items-center gap-2">
+              <span className="text-[0.43rem] text-[#a18e95]">{index + 1}</span>
+              <div className="min-w-0">
+                <p className="truncate text-[0.45rem] text-[#55434a]" title={displayLabel}>{displayLabel}</p>
+                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/80">
+                  <div className="h-full rounded-full" style={{ width: `${Math.max(5, (value.mae / max) * 100)}%`, background: tone.bar }} />
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="block font-mono text-[0.45rem] font-semibold text-[#4f3d44]">{value.mae.toFixed(2)}</span>
+                <span className="block text-[0.4rem] text-[#9e8a92]">n={value.n.toLocaleString()}</span>
               </div>
             </div>
-            <div className="text-right">
-              <span className="block font-mono text-[0.45rem] font-semibold text-[#4f3d44]">{value.mae.toFixed(2)}</span>
-              <span className="block text-[0.4rem] text-[#9e8a92]">n={value.n.toLocaleString()}</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </article>
   );
@@ -521,9 +615,8 @@ function SummaryCard({
   );
 }
 
-function buildContext(row: Record<string, unknown>) {
+function buildContext(row: Record<string, unknown>, cheeseCategory: CheeseCategory, physicalForm: string | null) {
   const specs = [
-    ["Cheese category", "cheese_category"],
     ["Food matrix", "food_matrix"],
     ["Storage temperature", "storage_temperature_c"],
     ["pH", "matrix_ph"],
@@ -532,12 +625,19 @@ function buildContext(row: Record<string, unknown>) {
     ["Indicator type", "indicator_type"],
   ] as const;
 
-  return specs.flatMap(([label, key]) => {
+  const leading: { label: string; value: string }[] = [
+    { label: "Cheese category", value: CATEGORY_LABEL[cheeseCategory] },
+  ];
+  if (physicalForm) leading.push({ label: "Physical form", value: humanize(physicalForm) });
+
+  const rest = specs.flatMap(([label, key]) => {
     const value = row[key];
     if (value === null || value === undefined || value === "") return [];
     const suffix = key === "storage_temperature_c" ? " °C" : key === "matrix_moisture_pct" ? "%" : "";
     return [{ label, value: `${formatValue(value)}${suffix}` }];
   });
+
+  return [...leading, ...rest];
 }
 
 function prioritizedSegments(categoryErrors: ModelDetails["category_errors"]) {
@@ -549,6 +649,13 @@ function prioritizedSegments(categoryErrors: ModelDetails["category_errors"]) {
     const bRank = bi === -1 ? 999 : bi;
     return aRank - bRank;
   });
+}
+
+function controlLabel(raw: string) {
+  const n = Number(raw);
+  if (n === 1) return "Control";
+  if (n === 0) return "Treatment";
+  return humanize(raw);
 }
 
 function formatValue(value: unknown) {

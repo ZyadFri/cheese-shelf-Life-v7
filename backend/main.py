@@ -577,6 +577,38 @@ def v6_model_details(model: str, category: str, task: str) -> dict:
     })
 
 
+@app.get("/api/v6/models/ebm/shapes")
+def v6_ebm_shapes(category: str, task: str, top_n: int = 4) -> dict:
+    """Specialist-scoped analogue of /api/models/ebm/shapes -- same
+    ebm_model.explain_global() approach, against the EBM artifact actually
+    trained for this cheese_category x model_task specialist, never the
+    retired global model."""
+    reg = _require_v6()
+    svc, routing_meta = reg.resolve(category, task)
+    if svc is None:
+        raise HTTPException(404, routing_meta["reason"] or "No specialist available for this category/task")
+    if "ebm" not in svc.models:
+        raise HTTPException(404, "EBM model not available for this specialist")
+    native = svc.feature_importance.get("ebm", {}).get("native", {})
+    top_terms = sorted(native.items(), key=lambda kv: abs(kv[1]), reverse=True)[:top_n]
+    ebm_model = svc.models["ebm"]
+    global_exp = ebm_model.explain_global()
+    names = list(global_exp.data()["names"])
+    shapes = []
+    for term, _ in top_terms:
+        if term not in names:
+            continue
+        idx = names.index(term)
+        d = global_exp.data(idx)
+        shapes.append({
+            "term": term,
+            "type": d["type"],
+            "names": [str(x) for x in d["names"]],
+            "scores": [float(s) for s in d["scores"]],
+        })
+    return _clean({"shapes": shapes})
+
+
 # ── Classification (formulation+treatment efficacy class) ──────────────────
 #
 # Independent of the regression models above: reads only from

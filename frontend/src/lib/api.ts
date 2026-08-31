@@ -699,6 +699,10 @@ export const api = {
     request<SpecialistModelsResponse>(`/api/v6/models?category=${category}&task=${task}`),
   v6ModelDetails: (category: CheeseCategory, task: ModelTask, model: string) =>
     request<ModelDetails>(`/api/v6/models/${model}/details?category=${category}&task=${task}`),
+  v6EbmShapes: (category: CheeseCategory, task: ModelTask, topN = 4) =>
+    request<{ shapes: { term: string; type: string; names: string[]; scores: number[] }[] }>(
+      `/api/v6/models/ebm/shapes?category=${category}&task=${task}&top_n=${topN}`,
+    ),
 
   // ── classification ─────────────────────────────────────────────────────
   classificationHealth: () => request<{ available: boolean; best_model?: string; models?: string[] }>("/api/classification/health"),
