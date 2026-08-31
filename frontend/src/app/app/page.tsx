@@ -17,9 +17,9 @@ const PREDICTION_EXAMPLES: PredictionExample[] = [
     image:
       cheeseImages["fresh mozzarella"]?.imageUrl ??
       "/marketing/cheeses.jpg",
-    predictedDays: 12.484722176972175,
+    shelfLifeDays: 63,
     condition: "100% CO₂ MAP · 7°C",
-    sourceLabel: "External-test case · Alves 1996",
+    sourceLabel: "Alves et al. · 1996",
   },
   {
     title: "Fresh cheese",
@@ -27,25 +27,25 @@ const PREDICTION_EXAMPLES: PredictionExample[] = [
     image:
       cheeseImages["minas fresh cheese"]?.imageUrl ??
       "/marketing/cheeses.jpg",
-    predictedDays: 13.737692055707438,
+    shelfLifeDays: 9,
     condition: "Atmospheric air · 4°C",
-    sourceLabel: "External-test case · Barukčić 2020",
+    sourceLabel: "Barukčić et al. · 2020",
   },
   {
     title: "Gouda spread",
     subtitle: "Semi-hard · spreadable",
     image: cheeseImages.gouda?.imageUrl ?? "/marketing/cheeses.jpg",
-    predictedDays: 52.9774572744566,
+    shelfLifeDays: 49,
     condition: "Temperature storage · 8°C",
-    sourceLabel: "External-test case · 2018",
+    sourceLabel: "Published study · 2018",
   },
   {
     title: "Aged Provolone",
     subtitle: "Hard cheese · portioned",
     image: cheeseImages.provolone?.imageUrl ?? "/marketing/cheese-aging.jpg",
-    predictedDays: 60.0878833834208,
+    shelfLifeDays: 190,
     condition: "Vacuum package · 8°C",
-    sourceLabel: "External-test case · Favati 2007",
+    sourceLabel: "Favati et al. · 2007",
   },
 ];
 
@@ -231,17 +231,17 @@ export default async function HomePage() {
         <section className="mt-5 rounded-[24px] border border-[#eadfe2] bg-[linear-gradient(145deg,rgba(255,255,255,.9),rgba(255,248,250,.84))] p-4 shadow-[0_22px_58px_-48px_rgba(89,30,48,.45)] backdrop-blur-xl sm:p-5">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3 px-1">
             <div>
-              <p className="text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-[#965b6e]">Example predictions</p>
+              <p className="text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-[#965b6e]">Literature benchmarks</p>
             </div>
             <Link href="/app/results" className="text-[0.58rem] font-semibold text-[#8c2847] hover:underline">
-              View all results&nbsp;&nbsp;→
+              View model results&nbsp;&nbsp;→
             </Link>
           </div>
 
           <PredictionCarousel items={PREDICTION_EXAMPLES} />
 
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-[#efe5e8] px-1 pt-3 text-[0.49rem] text-[#a18d94]">
-            <span>Prediction values: V7 external-test prediction artifact</span>
+            <span>Values: reported shelf-life endpoints from the cited studies</span>
             <span>Cheese imagery: Wikipedia / Wikimedia Commons catalog</span>
           </div>
         </section>
