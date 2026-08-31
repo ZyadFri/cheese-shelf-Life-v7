@@ -12,12 +12,21 @@ import { useSession } from "@/components/session-store";
 import { ApiError } from "@/lib/api";
 
 export function LoginForm() {
-  const { signIn } = useSession();
+  const { signIn, user, loading } = useSession();
   const router = useRouter();
   const params = useSearchParams();
   // Only accept internal paths — an absolute URL here would be an open redirect.
   const rawNext = params.get("next");
   const next = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/app";
+
+  // A session cookie being present doesn't mean it's valid (expired, signed
+  // with an old secret, pointing at a deleted account) -- middleware can
+  // only see that it exists, not whether it's real, so this "already signed
+  // in, skip the form" redirect has to live here instead, where useSession
+  // has already confirmed it against the server via /api/auth/me.
+  React.useEffect(() => {
+    if (!loading && user) router.replace(next);
+  }, [loading, user, router, next]);
 
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");

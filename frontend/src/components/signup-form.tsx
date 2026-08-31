@@ -15,8 +15,15 @@ import { cn } from "@/lib/utils";
 const MIN_PASSWORD = 8;
 
 export function SignupForm() {
-  const { signUp } = useSession();
+  const { signUp, user, loading } = useSession();
   const router = useRouter();
+
+  // See login-form.tsx: a present session cookie isn't necessarily a valid
+  // one, so only the client (which actually confirms it via /api/auth/me)
+  // can decide to skip this form.
+  React.useEffect(() => {
+    if (!loading && user) router.replace("/app");
+  }, [loading, user, router]);
 
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
