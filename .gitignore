@@ -43,3 +43,12 @@ _*.png
 _backend.log
 _frontend.log
 frontend/_run_smoke.*
+
+# Local-only archive of superseded logs/zips -- kept on disk, never tracked.
+archive/
+
+# Recorded presentation demo footage (large binaries, regenerable via the
+# scripts in presentation_demo/ against a running local app).
+presentation_demo/output/
+presentation_demo/auth/
+presentation_demo/node_modules/
